@@ -1,7 +1,7 @@
 {
   "name": "vtc-hub-client",
   "productName": "VTC Hub",
-  "version": "1.0.10",
+  "version": "1.0.11",
   "description": "Desktop telemetry client for VTC Hub",
   "main": "main.cjs",
   "author": "VTC Fleet Forge",

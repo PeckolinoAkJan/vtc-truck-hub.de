@@ -186,7 +186,9 @@
 /* ================= Live-Map ================= */
 .lm-holder { position: relative; height: 100%; min-height: 320px; border-radius: 12px; overflow: hidden; border: 1px solid var(--border); background: #050a08; }
 .lm-canvas { position: absolute; inset: 0; }
-.lm-canvas .leaflet-container { background: #050a08; }
+.lm-canvas .leaflet-container { background: radial-gradient(ellipse at center, #10281d 0%, #06110d 68%, #030806 100%); }
+.lm-city-label { background: rgba(3,12,8,.94) !important; border: 1px solid rgba(74,222,128,.55) !important; color: #dcfce7 !important; font-size: 10px !important; font-weight: 600 !important; padding: 2px 5px !important; box-shadow: 0 2px 8px rgba(0,0,0,.55) !important; }
+.lm-city-label::before { border-top-color: rgba(74,222,128,.55) !important; }
 .lm-empty { position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted-foreground); font-size: 12px; pointer-events: none; }
 .lm-controls { position: absolute; top: 10px; right: 10px; display: flex; flex-direction: column; gap: 6px; z-index: 500; }
 .lm-btn { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--border); background: rgba(6,20,14,.9); color: #d1fae5; cursor: pointer; }
@@ -220,7 +222,7 @@
 .lm-list-item .lm-dot.self { background: #22c55e; box-shadow: 0 0 6px #22c55e; }
 .lm-list-name { font-size: 13px; font-weight: 500; }
 .lm-list-sub { font-size: 11px; color: var(--muted-foreground); }
-.lm-modal-map { border-radius: 12px; overflow: hidden; }
+.lm-modal-map { border-radius: 12px; overflow: hidden; background: #06110d; }
 
 .lm-topbar { position: absolute; left: 10px; top: 10px; right: 56px; z-index: 500; display: flex; align-items: center; gap: 6px; background: rgba(6,20,14,.85); border: 1px solid var(--border); border-radius: 10px; padding: 4px; }
 .lm-topbar .lm-spacer { flex: 1; }

@@ -98,7 +98,7 @@ function createWindow() {
     minWidth: 1100,
     minHeight: 700,
     backgroundColor: "#04090c",
-    title: "VTC Hub Client v1.0.10",
+    title: "VTC Hub Client v1.0.11",
     webPreferences: {
       preload: path.join(__dirname, "preload.cjs"),
       contextIsolation: true,

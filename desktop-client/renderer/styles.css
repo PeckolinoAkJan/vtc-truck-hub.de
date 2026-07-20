@@ -684,7 +684,21 @@ input:focus, select:focus, textarea:focus {
     repeating-linear-gradient(0deg, rgba(34,197,94,.06) 0 1px, transparent 1px 80px),
     repeating-linear-gradient(90deg, rgba(34,197,94,.06) 0 1px, transparent 1px 80px);
 }
-.leaflet-container { background: transparent !important; font-family: inherit; outline: none; }
+.leaflet-container {
+  background:
+    radial-gradient(ellipse at center, #10281d 0%, #06110d 68%, #030806 100%) !important;
+  font-family: inherit; outline: none;
+}
+.lm-city-label {
+  background: rgba(3, 12, 8, .94) !important;
+  border: 1px solid rgba(74, 222, 128, .55) !important;
+  color: #dcfce7 !important;
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  padding: 2px 5px !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,.55) !important;
+}
+.lm-city-label::before { border-top-color: rgba(74, 222, 128, .55) !important; }
 .leaflet-container a { color: var(--emerald-2); }
 
 .lm-empty, .lm-error {
@@ -818,7 +832,7 @@ input:focus, select:focus, textarea:focus {
   display: flex; flex-direction: column; gap: 8px;
   background: rgba(4,9,12,.6);
 }
-.lm-modal-map { position: relative; }
+.lm-modal-map { position: relative; background: #06110d; }
 .lm-modal-map .lm-canvas { position: absolute; inset: 0; }
 
 .lm-search {

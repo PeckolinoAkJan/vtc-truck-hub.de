@@ -200,13 +200,15 @@
         if (!connected.has(key)) {
           connected.add(key);
           L.polyline([from, GM.gameCoordinatesToMapCoordinates(game, nearest)], {
-            color: "#1f6f46", weight: 1.5, opacity: 0.42, interactive: false,
+            color: "#34d27a", weight: 2.5, opacity: 0.72, interactive: false,
           }).addTo(layer);
         }
       }
       L.circleMarker(from, {
-        radius: 3, color: "#49d17d", weight: 1, fillColor: "#123c2a", fillOpacity: 0.95,
-      }).bindTooltip(city.name, { direction: "top", opacity: 0.9 }).addTo(layer);
+        radius: 4, color: "#86efac", weight: 1.5, fillColor: "#22c55e", fillOpacity: 1,
+      }).bindTooltip(city.name, {
+        permanent: true, direction: "top", opacity: 1, className: "lm-city-label",
+      }).addTo(layer);
     }
     layer.addTo(map);
     state.baseLayer = layer;

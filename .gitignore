@@ -10,6 +10,7 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+desktop-client/release/
 .output
 .vinxi
 .tanstack/**

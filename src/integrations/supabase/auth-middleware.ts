@@ -104,7 +104,7 @@ export const requireSupabaseAuth = createMiddleware({ type: 'function' }).server
     // signing secret or the runtime cannot use the project's JWKS endpoint.
     const { data, error } = await supabase.auth.getUser(token);
     if (error || !data.user) {
-      throw new Error('Unauthorized: Invalid token');
+      throw new Error(`Unauthorized: Invalid token${error?.message ? ` (${error.message})` : ''}`);
     }
 
     if (!data.user.id) {

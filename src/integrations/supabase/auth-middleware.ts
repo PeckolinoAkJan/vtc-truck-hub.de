@@ -53,16 +53,17 @@ export const requireSupabaseAuth = createMiddleware({ type: 'function' }).server
     }
 
     const authHeader = request.headers.get('authorization');
+    const proxySafeToken = request.headers.get('x-supabase-auth');
 
-    if (!authHeader) {
+    if (!authHeader && !proxySafeToken) {
       throw new Error('Unauthorized: No authorization header provided');
     }
 
-    if (!authHeader.startsWith('Bearer ')) {
+    if (authHeader && !authHeader.startsWith('Bearer ')) {
       throw new Error('Unauthorized: Only Bearer tokens are supported');
     }
 
-    const token = authHeader.replace('Bearer ', '');
+    const token = proxySafeToken || authHeader?.replace('Bearer ', '') || '';
     if (!token) {
       throw new Error('Unauthorized: No token provided');
     }

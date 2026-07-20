@@ -9,7 +9,13 @@ export const attachSupabaseAuth = createMiddleware({ type: 'function' }).client(
     const { data } = await supabase.auth.getSession()
     const token = data.session?.access_token
     return next({
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      headers: token
+        ? {
+            Authorization: `Bearer ${token}`,
+            // Some reverse proxies strip Authorization before forwarding to Node.
+            'X-Supabase-Auth': token,
+          }
+        : {},
     })
   },
 )

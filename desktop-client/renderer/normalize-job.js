@@ -14,6 +14,16 @@
     root.normalizeJob = impl.normalizeJob;
   }
 })(typeof self !== "undefined" ? self : this, function () {
+  function firstDistance(candidates) {
+    let zero = null;
+    for (const value of candidates) {
+      if (typeof value !== "number" || !Number.isFinite(value) || value < 0) continue;
+      if (value > 0) return value;
+      zero = 0;
+    }
+    return zero;
+  }
+
   function normalizeJob(raw, ctx) {
     const j = raw || {};
     // Zusätzliche Fallback-Quellen aus dem Top-Level-Telemetrie-Frame
@@ -42,16 +52,31 @@
       tCargo.name || (typeof tCargo === "string" ? tCargo : null) ||
       null;
     const cargo = (typeof cargoRaw === "string" && cargoRaw.trim() === "") ? null : cargoRaw;
-    const distanceKm =
-      (typeof tNav.estimatedDistance === "number" ? tNav.estimatedDistance / 1000 : null) ??
-      tNav.plannedDistanceKm ?? tNav.distanceKm ??
-      (typeof tNav.distance === "number" ? tNav.distance / 1000 : null) ??
-      j.plannedDistanceKm ?? j.plannedDistance_km ?? j.remainingDistanceKm ??
-      j.navigation_distance ?? j.navigationDistance ??
-      (j.navigation && (j.navigation.plannedDistanceKm ?? j.navigation.distanceKm)) ??
-      (j.navigation && typeof j.navigation.distance === "number" ? j.navigation.distance / 1000 : null) ??
-      (typeof j.plannedDistance === "number" ? j.plannedDistance / 1000 : null) ??
-      null;
+    // Manche Telemetrie-Frames liefern zuerst 0 und erst nach der GPS-Berechnung
+    // einen echten Wert. Deshalb gewinnt die erste positive Distanz; 0 bleibt
+    // nur erhalten, wenn wirklich keine positive Quelle existiert.
+    const distanceKm = firstDistance([
+      tNav.plannedDistanceKm,
+      tNav.distanceKm,
+      tNav.estimatedDistanceKm,
+      tNav.routeDistanceKm,
+      tNav.remainingDistanceKm,
+      typeof tNav.estimatedDistance === "number" ? tNav.estimatedDistance / 1000 : null,
+      typeof tNav.distance === "number" ? tNav.distance / 1000 : null,
+      typeof tNav.routeDistance === "number" ? tNav.routeDistance / 1000 : null,
+      typeof tNav.remainingDistance === "number" ? tNav.remainingDistance / 1000 : null,
+      j.plannedDistanceKm,
+      j.plannedDistance_km,
+      j.remainingDistanceKm,
+      j.navigation_distance,
+      j.navigationDistance,
+      j.navigation?.plannedDistanceKm,
+      j.navigation?.distanceKm,
+      j.navigation?.estimatedDistanceKm,
+      typeof j.navigation?.estimatedDistance === "number" ? j.navigation.estimatedDistance / 1000 : null,
+      typeof j.navigation?.distance === "number" ? j.navigation.distance / 1000 : null,
+      typeof j.plannedDistance === "number" ? j.plannedDistance / 1000 : null,
+    ]);
     const income =
       j.income ?? j.money ?? j.reward ?? j.expectedIncome ?? j.jobIncome ??
       j.cargo?.income ?? j.cargo?.reward ?? tCargo.income ?? tCargo.reward ?? null;

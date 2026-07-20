@@ -9,6 +9,7 @@ import { publicError, logInternalError, newRequestId } from "@/lib/public-api-er
 const bodySchema = z.object({
   driver_steam_id: z.string().max(64).optional(),
   driver_user_id: z.string().uuid().optional(),
+  include_map_assets: z.boolean().optional(),
 });
 
 export const Route = createFileRoute("/api/public/telemetry/livemap")({
@@ -196,12 +197,29 @@ export const Route = createFileRoute("/api/public/telemetry/livemap")({
               };
             });
 
+          let cities: Array<{ game: string; name: string; country: string | null; x: number; z: number }> | undefined;
+          if (f.include_map_assets) {
+            const { data: cityRows } = await supabaseAdmin
+              .from("game_cities")
+              .select("game, name, country, x, z")
+              .order("game")
+              .order("name");
+            cities = (cityRows ?? []).map((city) => ({
+              game: city.game,
+              name: city.name,
+              country: city.country,
+              x: Number(city.x),
+              z: Number(city.z),
+            }));
+          }
+
           return new Response(
             JSON.stringify({
               ok: true,
               requestId,
               updatedAt: new Date().toISOString(),
               drivers,
+              ...(cities ? { cities } : {}),
             }),
             { status: 200, headers: { "content-type": "application/json" } },
           );

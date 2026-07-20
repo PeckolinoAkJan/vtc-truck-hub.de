@@ -225,11 +225,8 @@
     const engineOn = !!speed && !/^0\s*km\/h|^—/.test(speed);
     setText("liEngine", engineOn ? "Motor läuft" : "Motor aus");
 
-    // Odometer bleibt bis renderer.js liefert
-    if (!$("liOdo")?.textContent || $("liOdo").textContent === "— km") {
-      const dist = ($("dsDistance")?.textContent || "").trim();
-      if (dist && dist !== "— km") setText("liOdo", dist);
-    }
+    // Der echte Kilometerstand wird in renderer.js bei jedem Telemetrie-Frame
+    // aktualisiert. Hier keinen frühen 0-km-Wert dauerhaft festschreiben.
   }
 
   // ---------- Master Tick ----------

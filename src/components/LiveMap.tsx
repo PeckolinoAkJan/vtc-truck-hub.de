@@ -78,6 +78,7 @@ export function LiveMap({
   const poiLayerRef = useRef<L.LayerGroup | null>(null);
   const trackLayerRef = useRef<L.Polyline | null>(null);
   const tileLayerRef = useRef<L.TileLayer | null>(null);
+  const baseLayerRef = useRef<L.LayerGroup | null>(null);
   const tileErrorCountRef = useRef<number>(0);
   const currentGameRef = useRef<GameKey | null>(null);
   const centeredRef = useRef<boolean>(false);
@@ -143,6 +144,7 @@ export function LiveMap({
       mapRef.current = null;
       markersRef.current.clear();
       tileLayerRef.current = null;
+      baseLayerRef.current = null;
       poiLayerRef.current = null;
       trackLayerRef.current = null;
     };
@@ -162,6 +164,11 @@ export function LiveMap({
         setAttribution("Einfache Kartenansicht (Spielkarte deaktiviert)"); setTileFallback(true); return;
       }
       const cfg = getMapProviderConfig(activeGame);
+      if (!cfg.tileUrl) {
+        setTileFallback(true);
+        setAttribution(getAttribution() + " · " + activeGame);
+        return;
+      }
       const layer = leaflet.tileLayer(cfg.tileUrl, {
         minZoom: cfg.minZoom, maxZoom: cfg.maxZoom, tileSize: 256, noWrap: true,
         bounds: leaflet.latLngBounds([0, 0], [cfg.mapExtent, cfg.mapExtent]),
@@ -181,6 +188,47 @@ export function LiveMap({
       setAttribution(getAttribution() + " · " + activeGame);
     })();
   }, [ready, activeGame, tileFallback]);
+
+  // Zuverlässige, lokal aus unseren Stadtdaten gezeichnete Grundkarte.
+  // Sie bleibt sichtbar, auch wenn kein externer Tile-Dienst erreichbar ist.
+  useEffect(() => {
+    (async () => {
+      if (!ready || !mapRef.current) return;
+      const leaflet = await import("leaflet");
+      const map = mapRef.current;
+      if (baseLayerRef.current) { map.removeLayer(baseLayerRef.current); baseLayerRef.current = null; }
+      const gameCities = cities.filter((city) => normalizeGame(city.game) === activeGame);
+      if (!gameCities.length) return;
+      const layer = leaflet.layerGroup();
+      const connected = new Set<string>();
+      for (const city of gameCities) {
+        const from = gameCoordinatesToMapCoordinates(activeGame, city);
+        let nearest: (typeof gameCities)[number] | null = null;
+        let nearestSq = Number.POSITIVE_INFINITY;
+        for (const other of gameCities) {
+          if (other === city) continue;
+          const dx = Number(city.x) - Number(other.x);
+          const dz = Number(city.z) - Number(other.z);
+          const sq = dx * dx + dz * dz;
+          if (sq < nearestSq) { nearestSq = sq; nearest = other; }
+        }
+        if (nearest) {
+          const key = [city.name, nearest.name].sort().join("|");
+          if (!connected.has(key)) {
+            connected.add(key);
+            leaflet.polyline([from, gameCoordinatesToMapCoordinates(activeGame, nearest)], {
+              color: "#1f6f46", weight: 1.5, opacity: 0.42, interactive: false,
+            }).addTo(layer);
+          }
+        }
+        leaflet.circleMarker(from, {
+          radius: 3, color: "#49d17d", weight: 1, fillColor: "#123c2a", fillOpacity: 0.95,
+        }).bindTooltip(city.name, { direction: "top", opacity: 0.9 }).addTo(layer);
+      }
+      layer.addTo(map);
+      baseLayerRef.current = layer;
+    })();
+  }, [cities, activeGame, ready]);
 
   // Filter angewendet
   const filtered = useMemo(

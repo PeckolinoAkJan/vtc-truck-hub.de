@@ -547,6 +547,25 @@ async function pollOnce(url) {
 }
 
 function n(v, d = 0) { return typeof v === "number" && !isNaN(v) ? v : d; }
+
+function positiveDistance(values) {
+  return values.find((value) => typeof value === "number" && Number.isFinite(value) && value > 0) ?? null;
+}
+
+function remainingDistanceKm(d) {
+  const nav = d.navigation || {};
+  const jobNav = d.job?.navigation || {};
+  return positiveDistance([
+    nav.remainingDistanceKm,
+    typeof nav.remainingDistance === "number" ? nav.remainingDistance / 1000 : null,
+    nav.estimatedDistanceKm,
+    typeof nav.estimatedDistance === "number" ? nav.estimatedDistance / 1000 : null,
+    d.job?.remainingDistanceKm,
+    typeof d.job?.remainingDistance === "number" ? d.job.remainingDistance / 1000 : null,
+    jobNav.remainingDistanceKm,
+    typeof jobNav.remainingDistance === "number" ? jobNav.remainingDistance / 1000 : null,
+  ]);
+}
 function gameOf(d) { return ((d.game || {}).gameName || "").toLowerCase().includes("ats") ? "ats" : "ets2"; }
 
 function gameTimeMs(value) {
@@ -603,7 +622,15 @@ function updateDashboard(d) {
   bar.style.width = `${Math.min(100, pct)}%`;
   bar.className = "progress-bar" + (pct < 15 ? " danger" : pct < 30 ? " warn" : "");
   const nj = normalizeJob(j, { trailer: d.trailer, cargo: d.cargo, navigation: d.navigation });
-  $("dsDistance").textContent = nj.distanceKm != null ? `${Math.round(n(nj.distanceKm))} km` : "— km";
+  const drivenKm = n(state.activeJob?.drivenKm);
+  const shownDistance = drivenKm > 0 ? drivenKm : n(nj.distanceKm) > 0 ? n(nj.distanceKm) : null;
+  $("dsDistance").textContent = shownDistance != null ? `${shownDistance.toFixed(shownDistance < 10 ? 1 : 0)} km` : "— km";
+  const odometer = [t.odometer, t.gameOdometer, t.truckOdometer]
+    .find((value) => typeof value === "number" && Number.isFinite(value) && value > 0);
+  const odoEl = $("liOdo");
+  if (odoEl) odoEl.textContent = odometer != null
+    ? `${Math.round(odometer).toLocaleString("de-DE")} km`
+    : drivenKm > 0 ? `${drivenKm.toFixed(1)} km` : "— km";
   $("dsRoute").textContent = (nj.src && nj.dst) ? `${nj.src} → ${nj.dst}` : "—";
   const drove = Math.round(n(updateDriveClock(d)?.minutes));
   $("dsDriveTime").textContent = drove > 0 ? `${drove} Min` : "— Min";
@@ -631,7 +658,11 @@ function updateActiveJobWidget(d) {
   const incomeOk = nj.income != null && n(nj.income) > 0;
   const massOk = nj.mass != null && n(nj.mass) > 0;
   $("ajIncome").textContent = incomeOk ? `${Math.round(n(nj.income))} €` : "Wird berechnet…";
-  $("ajDistance").textContent = nj.distanceKm != null ? `${Math.round(n(nj.distanceKm))} km` : "Wird berechnet…";
+  const drivenKm = n(state.activeJob?.drivenKm);
+  const shownDistance = drivenKm > 0 ? drivenKm : n(nj.distanceKm) > 0 ? n(nj.distanceKm) : null;
+  $("ajDistance").textContent = shownDistance != null
+    ? `${shownDistance.toFixed(shownDistance < 10 ? 1 : 0)} km`
+    : "Wird berechnet…";
   $("ajMass").textContent = massOk ? `${(n(nj.mass) / 1000).toFixed(1)} t` : "Wird berechnet…";
   const pill = $("ajStatus");
   if (state.activeJob) { pill.textContent = "Läuft – automatisch synchronisiert"; pill.className = "pill pill-ok"; }
@@ -777,18 +808,30 @@ async function postLiveFrame(d) {
   const s = state.settings;
   if (!s.apiUrl || !s.apiKey) return;
   const t = d.truck || {}, j = d.job || {}, g = d.game || {};
-  const normalizedJob = normalizeJob(d);
+  const normalizedJob = normalizeJob(j, {
+    trailer: d.trailer,
+    cargo: d.cargo,
+    navigation: d.navigation,
+  });
+  const remainingKm = remainingDistanceKm(d);
+  const drivenKm = n(state.activeJob?.drivenKm);
+  const observedTotalKm = Math.max(
+    n(state.activeJob?.plannedDistanceKm),
+    n(normalizedJob.distanceKm),
+    remainingKm != null ? drivenKm + remainingKm : 0,
+  );
   const body = {
     status: n(t.speed) > 5 ? "driving" : "idle",
     truck_model: t.model || undefined, truck_brand: t.make || undefined, truck_plate: t.licensePlate || undefined,
     speed_kmh: n(t.speed),
     position_x: t.placement?.x, position_y: t.placement?.y, position_z: t.placement?.z, heading: t.placement?.heading,
     fuel: n(t.fuel), fuel_capacity: n(t.fuelCapacity), fuel_level: n(t.fuel), fuel_consumption_avg: n(t.fuelAverageConsumption),
-    cargo: (typeof j.cargo === "string" ? j.cargo : j.cargo?.name) || j.cargoName || undefined,
+    cargo: normalizedJob.cargo || undefined,
     cargo_mass_kg: n(normalizedJob.mass),
-    source_city: (j.sourceCity || j.source?.city?.name || j.source?.city) || undefined,
-    dest_city: (j.destinationCity || j.destination?.city?.name || j.destination?.city) || undefined,
-    job_distance_km: n(j.plannedDistanceKm ?? j.remainingDistanceKm),
+    source_city: normalizedJob.src || undefined,
+    dest_city: normalizedJob.dst || undefined,
+    job_distance_km: observedTotalKm > 0 ? observedTotalKm : undefined,
+    job_remaining_km: remainingKm ?? undefined,
 
     damage_cabin: n(t.wearCabin) * 100, damage_chassis: n(t.wearChassis) * 100, damage_engine: n(t.wearEngine) * 100,
     damage_transmission: n(t.wearTransmission) * 100, damage_wheels: n(t.wearWheels) * 100,
@@ -901,6 +944,13 @@ async function syncJobLifecycle(d) {
       }
       state.activeJob._lastTs = now;
     }
+
+    const currentRemainingKm = remainingDistanceKm(d);
+    state.activeJob.plannedDistanceKm = Math.max(
+      n(state.activeJob.plannedDistanceKm),
+      n(nj.distanceKm),
+      currentRemainingKm != null ? n(state.activeJob.drivenKm) + currentRemainingKm : 0,
+    );
 
     // Fortschritt regelmäßig an denselben offenen Auftrag senden. Dadurch bleibt
     // die Webanzeige auch während langer Touren und nach Smart-Resume aktuell.

@@ -46,10 +46,11 @@
   }
 
   const maps = {
-    small: { map: null, markers: new Map(), tileLayer: null, tileErrors: 0, currentGame: null, fallback: false, centered: false },
-    big: { map: null, markers: new Map(), tileLayer: null, tileErrors: 0, currentGame: null, fallback: false, centered: false },
+    small: { map: null, markers: new Map(), tileLayer: null, baseLayer: null, tileErrors: 0, currentGame: null, fallback: false, centered: false },
+    big: { map: null, markers: new Map(), tileLayer: null, baseLayer: null, tileErrors: 0, currentGame: null, fallback: false, centered: false },
   };
   let lastDrivers = [];
+  let mapCities = [];
   let lastUpdatedAt = null;
   let gameMode = "auto"; // auto | ETS2 | ATS
   let followSelf = true;
@@ -116,6 +117,12 @@
     }
 
     const cfg = GM.getMapProviderConfig(game);
+    if (!cfg.tileUrl) {
+      state.currentGame = game;
+      state.fallback = true;
+      setAttribution(GM.getAttribution() + " · " + game);
+      return;
+    }
     const layer = L.tileLayer(cfg.tileUrl, {
       minZoom: cfg.minZoom,
       maxZoom: cfg.maxZoom,
@@ -150,6 +157,43 @@
     // Kein setMaxBounds mehr: Fahrer außerhalb der Basiswelt (DLC, ATS)
     // sollen sichtbar bleiben. Grid-Fallback + Follow-Self reichen aus.
     setAttribution(GM.getAttribution() + " · " + game);
+  }
+
+  function renderCityBase(kind) {
+    const state = maps[kind];
+    const map = state.map;
+    if (!map || !GM || !window.L) return;
+    if (state.baseLayer) { map.removeLayer(state.baseLayer); state.baseLayer = null; }
+    const game = activeGame();
+    const cities = mapCities.filter((city) => GM.normalizeGame(city.game) === game);
+    if (!cities.length) return;
+    const layer = L.layerGroup();
+    const connected = new Set();
+    for (const city of cities) {
+      const from = GM.gameCoordinatesToMapCoordinates(game, city);
+      let nearest = null;
+      let nearestSq = Infinity;
+      for (const other of cities) {
+        if (other === city) continue;
+        const dx = city.x - other.x, dz = city.z - other.z;
+        const sq = dx * dx + dz * dz;
+        if (sq < nearestSq) { nearestSq = sq; nearest = other; }
+      }
+      if (nearest) {
+        const key = [city.name, nearest.name].sort().join("|");
+        if (!connected.has(key)) {
+          connected.add(key);
+          L.polyline([from, GM.gameCoordinatesToMapCoordinates(game, nearest)], {
+            color: "#1f6f46", weight: 1.5, opacity: 0.42, interactive: false,
+          }).addTo(layer);
+        }
+      }
+      L.circleMarker(from, {
+        radius: 3, color: "#49d17d", weight: 1, fillColor: "#123c2a", fillOpacity: 0.95,
+      }).bindTooltip(city.name, { direction: "top", opacity: 0.9 }).addTo(layer);
+    }
+    layer.addTo(map);
+    state.baseLayer = layer;
   }
 
   function setAttribution(txt) {
@@ -219,6 +263,7 @@
     const map = ensureMap(kind);
     if (!map) return;
     applyTileLayer(kind);
+    renderCityBase(kind);
     const game = activeGame();
     const seen = new Set();
     let selfLatLng = null;
@@ -320,11 +365,12 @@
       const r = await fetch(s.apiUrl + "/api/public/telemetry/livemap", {
         method: "POST",
         headers: { "content-type": "application/json", authorization: "Bearer " + s.apiKey },
-        body: JSON.stringify(ident),
+        body: JSON.stringify(Object.assign({}, ident, { include_map_assets: mapCities.length === 0 })),
       });
       if (!r.ok) throw new Error("http_" + r.status);
       const data = await r.json();
       lastDrivers = Array.isArray(data.drivers) ? data.drivers : [];
+      if (Array.isArray(data.cities) && data.cities.length) mapCities = data.cities;
       lastUpdatedAt = data.updatedAt || new Date().toISOString();
       const err = document.getElementById("lmError"); if (err) err.style.display = "none";
       renderAll();

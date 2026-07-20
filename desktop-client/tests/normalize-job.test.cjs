@@ -164,6 +164,17 @@ test("Distanz=0 wird durchgereicht (frisch angenommener Job, noch keine Route)",
   assert.equal(normalizeJob(job).distanceKm, 0);
 });
 
+test("früher 0-Wert blockiert spätere GPS-Distanz nicht", () => {
+  const job = { sourceCity: "Brașov", destinationCity: "Brașov", plannedDistanceKm: 0 };
+  const r = normalizeJob(job, { navigation: { estimatedDistance: 73400 } });
+  assert.equal(r.distanceKm, 73.4);
+});
+
+test("Top-Level navigation remainingDistance wird aus Metern erkannt", () => {
+  const r = normalizeJob({}, { navigation: { remainingDistance: 12500 } });
+  assert.equal(r.distanceKm, 12.5);
+});
+
 test("Realistischer 'idle'-Frame ohne Job liefert alles null/false", () => {
   const job = { cargo: "", sourceCity: "", destinationCity: "" };
   const r = normalizeJob(job);

@@ -12,7 +12,7 @@
       originX: -16384,
       originZ: -16384,
       worldSize: 32768,
-      tileUrl: "https://tiles.truckyapp.com/ets2/{z}/{x}/{y}.png",
+      tileUrl: "",
       minZoom: 0,
       maxZoom: 7,
       mapExtent: 4096,
@@ -21,7 +21,7 @@
       originX: -32768,
       originZ: -32768,
       worldSize: 65536,
-      tileUrl: "https://tiles.truckyapp.com/ats/{z}/{x}/{y}.png",
+      tileUrl: "",
       minZoom: 0,
       maxZoom: 7,
       mapExtent: 4096,
@@ -60,7 +60,7 @@
   function getAttribution() {
     return (
       getSettingsOverride("mapAttribution") ||
-      "Karte: © TruckyApp / TruckersMP · Welt: © SCS Software"
+      "VTC Hub Stadtkarte · Weltkoordinaten: SCS Software"
     );
   }
 

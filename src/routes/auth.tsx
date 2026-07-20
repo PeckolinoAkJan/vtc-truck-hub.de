@@ -11,6 +11,36 @@ const searchSchema = z.object({
   role: z.enum(["founder", "driver"]).optional(),
 });
 
+function authErrorMessage(error: unknown): string {
+  if (error && typeof error === "object") {
+    const details = error as {
+      message?: unknown;
+      error_description?: unknown;
+      code?: unknown;
+      status?: unknown;
+    };
+    const message =
+      typeof details.message === "string"
+        ? details.message
+        : typeof details.error_description === "string"
+          ? details.error_description
+          : "";
+    const suffix = [
+      typeof details.code === "string" ? `Code: ${details.code}` : "",
+      typeof details.status === "number" ? `Status: ${details.status}` : "",
+    ]
+      .filter(Boolean)
+      .join(", ");
+
+    if (message) return suffix ? `${message} (${suffix})` : message;
+    if (suffix) return `Anmeldung fehlgeschlagen (${suffix})`;
+  }
+
+  return error instanceof Error && error.message
+    ? error.message
+    : "Fehler bei der Anmeldung";
+}
+
 export const Route = createFileRoute("/auth")({
   validateSearch: searchSchema,
   component: AuthPage,
@@ -81,7 +111,7 @@ function AuthPage() {
         navigate({ to: nextTarget, replace: true });
       }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Fehler bei der Anmeldung");
+      toast.error(authErrorMessage(err));
     } finally {
       setLoading(false);
     }

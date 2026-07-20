@@ -240,6 +240,7 @@ export const Route = createFileRoute("/api/public/telemetry/ingest")({
             // Odometer: Start-Kilometerstand nur setzen, wenn noch nicht
             // vorhanden. End-Kilometerstand nur monoton nach oben aktualisieren
             // (verhindert Rücksprünge durch Save-Load-Glitches).
+            let odometerDistance: number | null = null;
             if (typeof p.odometer_km === "number" && p.odometer_km > 0) {
               if (recentJob.odometer_start_km == null) {
                 updatePatch.odometer_start_km = p.odometer_km;
@@ -250,6 +251,10 @@ export const Route = createFileRoute("/api/public/telemetry/ingest")({
               ) {
                 updatePatch.odometer_end_km = p.odometer_km;
               }
+              if (recentJob.odometer_start_km != null) {
+                const delta = p.odometer_km - Number(recentJob.odometer_start_km);
+                if (delta >= 0 && delta <= 5000) odometerDistance = delta;
+              }
             }
 
             // Distance-Sanity: bereits gespeicherte, plausible distance_km wird
@@ -258,7 +263,9 @@ export const Route = createFileRoute("/api/public/telemetry/ingest")({
             // Regel: neuer Wert wird nur übernommen, wenn er entweder
             //  a) höher als der alte ist (monoton wachsende Fahrstrecke), UND
             //  b) nicht mehr als das 3-fache + 50 km über dem alten liegt.
-            if (typeof p.distance_km === "number") {
+            if (odometerDistance != null) {
+              updatePatch.distance_km = odometerDistance;
+            } else if (typeof p.distance_km === "number") {
               const oldDist = Number(recentJob.distance_km ?? 0);
               const newDist = p.distance_km;
               const glitchCap = Math.max(oldDist * 3, oldDist + 50);
@@ -355,7 +362,7 @@ export const Route = createFileRoute("/api/public/telemetry/ingest")({
           // Anti-Ghost-Job: 0-km Abgabe-Events (Glitch beim Abkuppeln) verwerfen.
           // Wir geben trotzdem 200 OK zurück, damit der Client die Queue leert.
           const dist = typeof p.distance_km === "number" ? p.distance_km : null;
-          if (dist !== null && dist < 1) {
+          if (dist !== null && dist < 2) {
             return new Response(
               JSON.stringify({ ok: true, dropped: "zero_km_ghost_job" }),
               { status: 200, headers: { "content-type": "application/json" } },

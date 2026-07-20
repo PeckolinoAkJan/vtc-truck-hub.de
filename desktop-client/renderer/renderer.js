@@ -788,13 +788,21 @@ async function syncJobLifecycle(d) {
 
 
   const trailerAttached = d.trailer && typeof d.trailer.attached === "boolean" ? d.trailer.attached : null;
+  const currentOdometer = typeof t.odometer === "number" ? t.odometer
+    : (typeof t.gameOdometer === "number" ? t.gameOdometer
+      : (typeof t.truckOdometer === "number" ? t.truckOdometer : null));
 
   if (hasJob && !finished && !cancelledFlag && sig && sig !== state.lastJobSig && !state.activeJob) {
     state.lastJobSig = sig;
     log(`Neuer Auftrag erkannt: ${src} → ${dst}${cargo ? ` (${cargo})` : ""}`);
     const startedPayload = {
       source_city: src, dest_city: dst, cargo: cargo || "Unbekannt",
-      distance_km: Math.round(n(nj.distanceKm)), revenue: Math.round(n(nj.income)),
+      // distance_km ist die tatsächlich gefahrene Strecke, nicht die Planstrecke.
+      distance_km: 0,
+      ...(currentOdometer != null && Number.isFinite(currentOdometer)
+        ? { odometer_km: currentOdometer }
+        : {}),
+      revenue: Math.round(n(nj.income)),
       game: gameOf(d), truck: t.model,
     };
     logJobMappingDiff("job_started", d.job, startedPayload, {
@@ -807,8 +815,11 @@ async function syncJobLifecycle(d) {
       income: n(nj.income),
       plannedDistanceKm: n(nj.distanceKm),
       drivenKm: 0,
-      startOdometer: null,
+      startOdometer: currentOdometer != null && Number.isFinite(currentOdometer)
+        ? currentOdometer
+        : null,
       _lastTs: null,
+      _lastProgressSync: 0,
     };
     if (res.ok && res.job_id) {
       state.activeJob = { ...baseAj, id: res.job_id };
@@ -825,9 +836,7 @@ async function syncJobLifecycle(d) {
 
   // ---- Gefahrene Distanz live mittracken (Odometer bevorzugt, sonst Speed-Integration) ----
   if (state.activeJob) {
-    const odoRaw = typeof t.odometer === "number" ? t.odometer
-      : (typeof t.gameOdometer === "number" ? t.gameOdometer
-        : (typeof t.truckOdometer === "number" ? t.truckOdometer : null));
+    const odoRaw = currentOdometer;
     if (odoRaw != null && Number.isFinite(odoRaw)) {
       if (state.activeJob.startOdometer == null) state.activeJob.startOdometer = odoRaw;
       const delta = odoRaw - state.activeJob.startOdometer;
@@ -841,6 +850,36 @@ async function syncJobLifecycle(d) {
         }
       }
       state.activeJob._lastTs = now;
+    }
+
+    // Fortschritt regelmäßig an denselben offenen Auftrag senden. Dadurch bleibt
+    // die Webanzeige auch während langer Touren und nach Smart-Resume aktuell.
+    const progressNow = Date.now();
+    if (
+      progressNow - (state.activeJob._lastProgressSync || 0) >= 30000 &&
+      n(state.activeJob.drivenKm) >= 0.1
+    ) {
+      state.activeJob._lastProgressSync = progressNow;
+      const progressPayload = {
+        source_city: state.activeJob.source || src || "?",
+        dest_city: state.activeJob.dest || dst || "?",
+        cargo: state.activeJob.cargo || cargo || "Unbekannt",
+        distance_km: Math.round(n(state.activeJob.drivenKm) * 10) / 10,
+        ...(currentOdometer != null && Number.isFinite(currentOdometer)
+          ? { odometer_km: currentOdometer }
+          : {}),
+        revenue: Math.round(n(state.activeJob.income) || n(nj.income)),
+        game: gameOf(d),
+        truck: t.model,
+      };
+      const progressResult = await postEvent(
+        "job_started",
+        progressPayload,
+        state.activeJob.id ? { job_id: state.activeJob.id } : {},
+      );
+      if (progressResult.ok && progressResult.job_id && !state.activeJob.id) {
+        state.activeJob.id = progressResult.job_id;
+      }
     }
   }
 
@@ -856,7 +895,12 @@ async function syncJobLifecycle(d) {
   const MISSING_THRESHOLD = 3; // ~6s bei 2s-Polling – vermeidet Menü-/Aussetzer-Fehlalarme
   if (state.activeJob && (finished || state.missingJobTicks >= MISSING_THRESHOLD) && !cancelledFlag) {
     const aj = state.activeJob;
-    const finalKm = Math.round(Math.max(n(aj.drivenKm), n(aj.plannedDistanceKm), n(nj.distanceKm)));
+    const measuredKm = n(aj.drivenKm);
+    const finalKm = Math.round(
+      measuredKm >= 1
+        ? measuredKm
+        : Math.max(n(aj.plannedDistanceKm), n(nj.distanceKm)),
+    );
     const reason = finished ? "Spiel meldet abgeschlossen"
       : trailerDetached ? "Auflieger abgekuppelt"
         : "Job aus Telemetrie verschwunden";
@@ -866,6 +910,9 @@ async function syncJobLifecycle(d) {
       dest_city: aj.dest || dst || "?",
       cargo: aj.cargo || cargo || "Unbekannt",
       distance_km: finalKm,
+      ...(currentOdometer != null && Number.isFinite(currentOdometer)
+        ? { odometer_km: currentOdometer }
+        : {}),
       revenue: Math.round(n(aj.income) || n(nj.income)),
       fuel_cost: 0,
       damage_pct: Math.round(n(t.wearCabin) * 100),

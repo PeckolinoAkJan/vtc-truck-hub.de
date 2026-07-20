@@ -229,6 +229,24 @@ export const listLiveTelemetry = createServerFn({ method: "GET" })
 
     // Attach driver display names
     const ids = Array.from(new Set((rows ?? []).map((r) => r.driver_id)));
+    const activeByDriver = new Map<
+      string,
+      { id: string; source_city: string; dest_city: string }
+    >();
+    if (ids.length > 0) {
+      const { data: activeJobs } = await supabase
+        .from("jobs")
+        .select("id, driver_id, source_city, dest_city, started_at")
+        .eq("vtc_id", data.vtcId)
+        .eq("status", "in_progress")
+        .in("driver_id", ids)
+        .order("started_at", { ascending: false });
+      for (const job of activeJobs ?? []) {
+        if (!activeByDriver.has(job.driver_id)) {
+          activeByDriver.set(job.driver_id, job);
+        }
+      }
+    }
     let profiles: Record<string, { display_name: string | null }> = {};
     if (ids.length > 0) {
       const { data: profs } = await supabase
@@ -237,10 +255,16 @@ export const listLiveTelemetry = createServerFn({ method: "GET" })
         .in("user_id", ids);
       profiles = Object.fromEntries((profs ?? []).map((p) => [p.user_id, { display_name: p.display_name }]));
     }
-    return (rows ?? []).map((r) => ({
-      ...r,
-      driver_name: profiles[r.driver_id]?.display_name ?? "Fahrer",
-    }));
+    return (rows ?? []).map((r) => {
+      const activeJob = activeByDriver.get(r.driver_id);
+      return {
+        ...r,
+        job_id: activeJob?.id ?? null,
+        job_source_city: activeJob?.source_city ?? r.source_city ?? null,
+        job_dest_city: activeJob?.dest_city ?? r.dest_city ?? null,
+        driver_name: profiles[r.driver_id]?.display_name ?? "Fahrer",
+      };
+    });
   });
 
 export const getTelemetryDetail = createServerFn({ method: "GET" })
@@ -388,4 +412,3 @@ export const getTelemetryDetail = createServerFn({ method: "GET" })
       },
     };
   });
-

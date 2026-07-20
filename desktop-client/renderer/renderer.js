@@ -28,6 +28,7 @@ const state = {
   lastResync: null, // { at, trigger, statusChanges, newRemote, missingLocal, durationMs }
   fullResyncTimer: null,
   _resyncing: false,
+  driveClock: JSON.parse(localStorage.getItem("mpl.driveClock") || "null"),
 
 
 };
@@ -548,6 +549,43 @@ async function pollOnce(url) {
 function n(v, d = 0) { return typeof v === "number" && !isNaN(v) ? v : d; }
 function gameOf(d) { return ((d.game || {}).gameName || "").toLowerCase().includes("ats") ? "ats" : "ets2"; }
 
+function gameTimeMs(value) {
+  if (typeof value !== "string" || !value) return null;
+  const ms = Date.parse(value);
+  return Number.isFinite(ms) ? ms : null;
+}
+
+function updateDriveClock(d) {
+  const g = d.game || {}, t = d.truck || {};
+  const currentGameMs = gameTimeMs(g.time);
+  if (currentGameMs == null) return state.driveClock;
+
+  const gameDay = String(g.time).slice(0, 10);
+  let clock = state.driveClock;
+  if (!clock || clock.gameDay !== gameDay) {
+    clock = { gameDay, minutes: 0, lastGameMs: currentGameMs };
+  } else {
+    const deltaMinutes = (currentGameMs - n(clock.lastGameMs, currentGameMs)) / 60000;
+    if (!g.paused && Math.abs(n(t.speed)) > 1 && deltaMinutes > 0 && deltaMinutes <= 60) {
+      clock.minutes += deltaMinutes;
+    }
+    clock.lastGameMs = currentGameMs;
+  }
+  state.driveClock = clock;
+  localStorage.setItem("mpl.driveClock", JSON.stringify(clock));
+  return clock;
+}
+
+function remainingRestMinutes(game) {
+  const nextRest = gameTimeMs(game?.nextRestStopTime);
+  const durationOrigin = gameTimeMs("0001-01-01T00:00:00Z");
+  if (nextRest == null || durationOrigin == null) return null;
+  // Funbit kodiert die verbleibende Zeit als DateTime ab 01.01.0001,
+  // nicht als absoluten Zeitpunkt der Spielwelt.
+  const minutes = Math.round((nextRest - durationOrigin) / 60000);
+  return minutes >= 0 && minutes <= 24 * 60 ? minutes : null;
+}
+
 // normalizeJob lebt in normalize-job.js (UMD, gemeinsam mit Node-Unit-Tests).
 // Wir referenzieren die globale Version, damit die Renderer-Datei unverändert bleibt.
 const normalizeJob = window.normalizeJob;
@@ -567,10 +605,10 @@ function updateDashboard(d) {
   const nj = normalizeJob(j, { trailer: d.trailer, cargo: d.cargo, navigation: d.navigation });
   $("dsDistance").textContent = nj.distanceKm != null ? `${Math.round(n(nj.distanceKm))} km` : "— km";
   $("dsRoute").textContent = (nj.src && nj.dst) ? `${nj.src} → ${nj.dst}` : "—";
-  const drove = n(t.userSteeringSelector) || n((d.game || {}).drivingMinutes) || 0;
+  const drove = Math.round(n(updateDriveClock(d)?.minutes));
   $("dsDriveTime").textContent = drove > 0 ? `${drove} Min` : "— Min";
-  const rest = n((d.game || {}).nextRestStopTime) || 0;
-  $("dsRestTime").textContent = rest > 0 ? `Ruhezeit: ${rest} Min` : "Ruhezeit: —";
+  const rest = remainingRestMinutes(d.game || {});
+  $("dsRestTime").textContent = rest != null ? `Ruhezeit: ${rest} Min` : "Ruhezeit: —";
 }
 
 function updateActiveJobWidget(d) {
@@ -730,9 +768,9 @@ function updateVehicle(d) {
     const cls = p > 60 ? "danger" : p > 30 ? "warn" : "";
     return `<div class="damage-item"><span class="lbl">${lbl}</span><div class="progress"><div class="progress-bar ${cls}" style="width:${p}%"></div></div><span class="val">${Math.round(p)}%</span></div>`;
   }).join("");
-  const drove = n((d.game || {}).drivingMinutes), rest = n((d.game || {}).nextRestStopTime);
+  const drove = Math.round(n(state.driveClock?.minutes)), rest = remainingRestMinutes(d.game || {});
   $("vDriveTime").textContent = drove > 0 ? `${drove} Min` : "—";
-  $("vRestTime").textContent = rest > 0 ? `${rest} Min` : "—";
+  $("vRestTime").textContent = rest != null ? `${rest} Min` : "—";
 }
 
 async function postLiveFrame(d) {
@@ -754,7 +792,8 @@ async function postLiveFrame(d) {
 
     damage_cabin: n(t.wearCabin) * 100, damage_chassis: n(t.wearChassis) * 100, damage_engine: n(t.wearEngine) * 100,
     damage_transmission: n(t.wearTransmission) * 100, damage_wheels: n(t.wearWheels) * 100,
-    driving_time_today_min: n(g.drivingMinutes) || undefined, rest_time_remaining_min: n(g.nextRestStopTime) || undefined,
+    driving_time_today_min: Math.round(n(state.driveClock?.minutes)) || undefined,
+    rest_time_remaining_min: remainingRestMinutes(g) ?? undefined,
     game: gameOf(d),
   };
   const ident = driverIdent(); if (!ident) return;
@@ -900,13 +939,15 @@ async function syncJobLifecycle(d) {
   // ---- Ende-Erkennung: Job verschwindet oder Auflieger abgekuppelt ----
   const jobGone = state.activeJob && !hasJob;
   const trailerDetached = state.activeJob && trailerAttached === false;
-  if (state.activeJob && (jobGone || trailerDetached) && !cancelledFlag) {
+  if (state.activeJob && jobGone && !cancelledFlag) {
     state.missingJobTicks += 1;
   } else if (hasJob && trailerAttached !== false) {
     state.missingJobTicks = 0;
   }
 
-  const MISSING_THRESHOLD = 3; // ~6s bei 2s-Polling – vermeidet Menü-/Aussetzer-Fehlalarme
+  // Erst 30 Sekunden ohne Job gelten als echtes Tourende. Ein kurz
+  // abgekoppelter Trailer allein darf den Auftrag nicht abschließen.
+  const MISSING_THRESHOLD = 15;
   if (state.activeJob && (finished || state.missingJobTicks >= MISSING_THRESHOLD) && !cancelledFlag) {
     const aj = state.activeJob;
     const measuredKm = n(aj.drivenKm);

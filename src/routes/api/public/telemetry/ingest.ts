@@ -536,6 +536,23 @@ export const Route = createFileRoute("/api/public/telemetry/ingest")({
 
         }
 
+        // Fortschrittsereignisse dürfen das Gewicht auch dann nachtragen,
+        // wenn der Auftrag durch einen kurzen Telemetrie-Aussetzer bereits
+        // irrtümlich als eingereicht markiert wurde.
+        if (
+          jobId &&
+          driverId &&
+          typeof p.cargo_mass_kg === "number" &&
+          p.cargo_mass_kg > 0
+        ) {
+          await supabaseAdmin
+            .from("jobs")
+            .update({ cargo_mass_kg: p.cargo_mass_kg })
+            .eq("id", jobId)
+            .eq("vtc_id", vtc.id)
+            .eq("driver_id", driverId);
+        }
+
         const { error: teErr } = await supabaseAdmin.from("telemetry_events").insert({
           vtc_id: vtc.id,
           job_id: jobId,

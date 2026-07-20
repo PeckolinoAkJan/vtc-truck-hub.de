@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.jobs_reverse_balance_on_delete() FROM PUBLIC, anon, authenticated;

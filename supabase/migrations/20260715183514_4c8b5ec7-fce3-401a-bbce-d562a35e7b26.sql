@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.add_vtc_owner_on_create() FROM PUBLIC, anon, authenticated;

@@ -1,0 +1,74 @@
+{
+  "name": "vtc-hub-client",
+  "productName": "VTC Hub",
+  "version": "1.0.4",
+  "description": "Desktop telemetry client for VTC Hub",
+  "main": "main.cjs",
+  "author": "VTC Fleet Forge",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PeckolinoAkJan/virtual-fleet-forge.git"
+  },
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test tests/normalize-job.test.cjs",
+    "package:win": "electron-packager . \"VTC Hub Client\" --platform=win32 --arch=x64 --out=release --overwrite --ignore='^/release'",
+    "dist:win": "electron-builder --win --x64 --publish never"
+  },
+  "devDependencies": {
+    "@electron/packager": "^20.0.2",
+    "electron": "^43.1.1",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "app.vtchub.client",
+    "productName": "VTC Hub",
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "PeckolinoAkJan",
+        "repo": "virtual-fleet-forge",
+        "channel": "latest"
+      }
+    ],
+    "artifactName": "VTC-Hub-Setup-${version}.${ext}",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "main.cjs",
+      "preload.cjs",
+      "renderer/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "VTC-Hub-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "allowElevation": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "VTC Hub",
+      "menuCategory": "VTC Hub",
+      "runAfterFinish": true,
+      "deleteAppDataOnUninstall": false,
+      "uninstallDisplayName": "VTC Hub Client"
+    }
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.9"
+  }
+}

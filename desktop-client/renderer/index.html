@@ -1,0 +1,536 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: blob: https://tiles.truckyapp.com https://map.truckersmp.com https://*.truckyapp.com https://*.truckersmp.com; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self' https://virtual-fleet-forge.lovable.app https://*.lovable.app http://localhost:25555" />
+    <title>VTC Hub Desktop Client v1.0.4</title>
+    <link rel="stylesheet" href="vendor/leaflet/leaflet.css" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <!-- ============ TOP HEADER (native Fensterleiste bleibt darüber sichtbar) ============ -->
+    <header class="topbar">
+      <div class="topbar-brand">
+        <div class="brand-hex">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/></svg>
+        </div>
+        <div class="brand-text">
+          <div class="brand-name">VTC <span class="brand-accent">Hub</span></div>
+          <div class="brand-sub">Desktop Client <span class="brand-version">v1.0.4</span></div>
+        </div>
+      </div>
+
+      <div class="topbar-right">
+        <div class="conn-block">
+          <span id="connDot" class="dot dot-idle"></span>
+          <div class="conn-text">
+            <div id="connLabel" class="conn-title">Nicht verbunden</div>
+            <div class="conn-sub">VTC Hub API</div>
+          </div>
+        </div>
+        <button class="topbar-btn" data-goto="settings" title="Einstellungen öffnen">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          <span>Einstellungen</span>
+        </button>
+      </div>
+    </header>
+
+    <div class="app">
+      <!-- ============ LEFT SIDEBAR NAVIGATION ============ -->
+      <nav class="side-nav" aria-label="Hauptnavigation">
+        <div class="nav-scroll">
+          <button class="nav-item active" data-tab="dashboard">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+            <span>Dashboard</span>
+          </button>
+          <button class="nav-item" data-tab="vehicle">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 16H9m10 0h1.4a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17 6H3"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/></svg>
+            <span>Fahrzeug</span>
+          </button>
+          <button class="nav-item" data-tab="auto">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v5h-5"/></svg>
+            <span>Synchronisation</span>
+          </button>
+          <button class="nav-item" data-tab="jobs">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 7h-3V5a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2v2H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><path d="M9 7V5h6v2"/></svg>
+            <span>Aufträge</span>
+          </button>
+          <button class="nav-item" data-tab="history">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 3h5a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"/><path d="M9 3h6v4H9z"/><path d="M8 12h8"/><path d="M8 16h6"/></svg>
+            <span>Protokoll</span>
+          </button>
+          <button class="nav-item" data-tab="chat">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            <span>VTC-Chat</span>
+          </button>
+          <button class="nav-item" data-tab="settings">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            <span>Einstellungen</span>
+          </button>
+        </div>
+
+        <div class="side-user">
+          <div class="user-avatar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+          </div>
+          <div class="user-meta">
+            <div id="sideUserName" class="user-name">Fahrer</div>
+            <div id="sideUserRole" class="user-role">VTC Hub Session</div>
+          </div>
+        </div>
+      </nav>
+
+      <!-- ============ MAIN CONTENT AREA ============ -->
+      <main class="content">
+        <!-- ================== DASHBOARD ================== -->
+        <section class="panel active" data-panel="dashboard">
+          <!-- Vier obere Statuskarten -->
+          <div class="status-cards">
+            <div class="status-card" data-status="idle" id="scTelemetry">
+              <div class="sc-head">
+                <div class="sc-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12h3l2-7 4 14 2-7h7"/></svg>
+                </div>
+                <span class="sc-title">Telemetrie</span>
+                <span class="sc-led"></span>
+              </div>
+              <div class="sc-value" id="scTelemetryValue">Inaktiv</div>
+              <div class="sc-sub" id="scTelemetrySub">Kein Spiel erkannt</div>
+            </div>
+
+            <div class="status-card" data-status="idle" id="scSync">
+              <div class="sc-head">
+                <div class="sc-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v5h-5"/></svg>
+                </div>
+                <span class="sc-title">Synchronisation</span>
+                <span class="sc-led"></span>
+              </div>
+              <div class="sc-value" id="scSyncValue">Bereit</div>
+              <div class="sc-sub" id="scSyncSub">Letzte Sync: —</div>
+            </div>
+
+            <div class="status-card" data-status="idle" id="scJob">
+              <div class="sc-head">
+                <div class="sc-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg>
+                </div>
+                <span class="sc-title">Auftragsstatus</span>
+                <span class="sc-led"></span>
+              </div>
+              <div class="sc-value" id="scJobValue">Bereit</div>
+              <div class="sc-sub" id="scJobSub">Kein Auftrag aktiv</div>
+            </div>
+
+            <div class="status-card" data-status="idle" id="scApi">
+              <div class="sc-head">
+                <div class="sc-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12.55a11 11 0 0 1 14 0"/><path d="M2 8.82a15 15 0 0 1 20 0"/><path d="M8.5 16.28a6 6 0 0 1 7 0"/><line x1="12" y1="20" x2="12" y2="20"/></svg>
+                </div>
+                <span class="sc-title">Verbindungsstatus</span>
+                <span class="sc-led"></span>
+              </div>
+              <div class="sc-value" id="scApiValue">Getrennt</div>
+              <div class="sc-sub" id="scApiSub">API nicht erreichbar</div>
+            </div>
+          </div>
+
+          <!-- Zwei-Spalten-Layout: Live-Telemetrie (breit) + rechte Rail -->
+          <div class="dashboard-grid">
+            <!-- Live-Telemetrie -->
+            <section class="card live-card">
+              <div class="card-head">
+                <h3><span class="dot dot-ok mini"></span> Live-Telemetrie</h3>
+                <span class="pill pill-outline">Auto Polling</span>
+              </div>
+
+              <div class="live-body">
+                <div class="live-info">
+                  <div class="li-row"><span class="li-icon">🎮</span><span class="li-label">Spiel</span><span id="liGame" class="li-value">—</span></div>
+                  <div class="li-row"><span class="li-icon">👤</span><span class="li-label">Fahrer</span><span id="liDriver" class="li-value">—</span></div>
+                  <div class="li-row"><span class="li-icon">🚛</span><span class="li-label">Fahrzeug</span><span id="dsTruck" class="li-value">Kein LKW erkannt</span></div>
+                  <div class="li-row"><span class="li-icon">📍</span><span class="li-label">Aktueller Standort</span><span id="liLocation" class="li-value">—</span></div>
+                  <div class="li-row"><span class="li-icon">⏱</span><span class="li-label">Geschwindigkeit</span><span id="dsSpeed" class="li-value">— km/h</span></div>
+                  <div class="li-row"><span class="li-icon">🧭</span><span class="li-label">Kilometerstand</span><span id="liOdo" class="li-value">— km</span></div>
+                  <div class="li-row"><span class="li-icon">⚙️</span><span class="li-label">Motorstatus</span><span id="liEngine" class="li-value">—</span></div>
+                  <div class="li-row"><span class="li-icon">⛽</span><span class="li-label">Treibstoff</span><span id="dsFuel" class="li-value">— L</span></div>
+                  <div class="progress fuel-progress"><div class="progress-bar" id="dsFuelBar"></div></div>
+                </div>
+
+                <div class="live-map" id="liveMap" aria-label="Live-Karte">
+                  <div id="lmMap" class="lm-canvas"></div>
+                  <div id="lmEmpty" class="lm-empty">Noch keine Positionsdaten</div>
+                  <div id="lmError" class="lm-error" style="display:none">Live-Karte vorübergehend nicht verfügbar</div>
+                  <div class="lm-topbar">
+                    <div class="lm-seg" role="group" aria-label="Spiel wählen">
+                      <button class="lm-seg-btn active" data-lm-mode="auto" title="Automatisch aus Telemetrie">Auto</button>
+                      <button class="lm-seg-btn" data-lm-mode="ETS2">ETS2</button>
+                      <button class="lm-seg-btn" data-lm-mode="ATS">ATS</button>
+                    </div>
+                    <div class="lm-spacer"></div>
+                    <button class="lm-btn" id="lmFit" title="Alle Fahrer anzeigen" aria-label="Alle Fahrer anzeigen">⤢</button>
+                    <button class="lm-btn" id="lmFollow" title="Automatisch folgen" aria-label="Automatisch folgen">◎</button>
+                    <button class="lm-btn" id="lmReload" title="Karte neu laden" aria-label="Karte neu laden">↻</button>
+                  </div>
+                  <div class="lm-controls">
+                    <button class="lm-btn" id="lmZoomIn" title="Vergrößern" aria-label="Vergrößern">+</button>
+                    <button class="lm-btn" id="lmZoomOut" title="Verkleinern" aria-label="Verkleinern">−</button>
+                    <button class="lm-btn" id="lmCenterSelf" title="Auf mich zentrieren" aria-label="Auf mich zentrieren">
+                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="8"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/></svg>
+                    </button>
+                    <button class="lm-btn" id="lmExpand" title="Vergrößern" aria-label="Karte vergrößern">
+                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+                    </button>
+                  </div>
+                  <div class="lm-attribution" id="lmAttribution"></div>
+                  <div class="lm-updated" id="lmUpdated"></div>
+                  <div class="lm-debug" id="lmDebug" style="position:absolute;left:12px;top:12px;z-index:500;font:11px/1.4 ui-monospace,monospace;color:#d1fae5;background:rgba(4,9,12,.78);border:1px solid var(--border);padding:6px 8px;border-radius:8px;max-width:60%;white-space:pre;pointer-events:none"></div>
+                </div>
+              </div>
+
+              <!-- Aktiver Auftrag (integriert in Live-Karte) -->
+              <div class="card active-job empty" id="activeJobCard">
+                <div class="aj-head">
+                  <div>
+                    <div class="aj-label">Aktueller Auftrag</div>
+                    <div class="aj-route" id="ajRoute">Kein aktiver Auftrag</div>
+                    <div class="aj-cargo" id="ajCargo">Nimm im Spiel einen Auftrag an – er wird automatisch übernommen.</div>
+                  </div>
+                  <div class="aj-head-actions">
+                    <button id="btnRefreshTelemetry" class="ghost small" title="Sofort neuen Telemetrie-Snapshot einlesen">↻ Telemetrie neu lesen</button>
+                    <span id="ajStatus" class="pill">Wartet auf Spiel</span>
+                  </div>
+                </div>
+                <div class="aj-stats">
+                  <div><span class="muted">Vergütung</span><strong id="ajIncome">—</strong></div>
+                  <div><span class="muted">Distanz</span><strong id="ajDistance">—</strong></div>
+                  <div><span class="muted">Gewicht</span><strong id="ajMass">—</strong></div>
+                </div>
+                <div id="ajWarning" class="aj-warning" style="display:none"></div>
+              </div>
+
+              <!-- Schnellaktionen -->
+              <div class="quick-actions">
+                <button class="qa-btn" data-goto="jobs">
+                  <div class="qa-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7h-3V5a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2v2H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/></svg></div>
+                  <div class="qa-body"><div class="qa-title">Aufträge anzeigen</div><div class="qa-sub">Aktuelle &amp; geplante →</div></div>
+                </button>
+                <button class="qa-btn" id="btnSyncNow">
+                  <div class="qa-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v5h-5"/></svg></div>
+                  <div class="qa-body"><div class="qa-title">Synchronisieren</div><div class="qa-sub">Jetzt manuell syncen →</div></div>
+                </button>
+                <button class="qa-btn" data-goto="history">
+                  <div class="qa-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3h5a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"/></svg></div>
+                  <div class="qa-body"><div class="qa-title">Protokoll öffnen</div><div class="qa-sub">Logs &amp; Events →</div></div>
+                </button>
+                <button class="qa-btn" data-goto="settings">
+                  <div class="qa-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/></svg></div>
+                  <div class="qa-body"><div class="qa-title">Einstellungen</div><div class="qa-sub">Client konfigurieren →</div></div>
+                </button>
+              </div>
+            </section>
+
+            <!-- Rechte Rail: Update + Systemprotokoll -->
+            <aside class="dashboard-rail">
+              <section class="card update-card">
+                <div class="card-head">
+                  <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Client Update</h3>
+                </div>
+                <div class="update-versions">
+                  <div class="uv-row"><span class="muted">Installierte Version</span><strong>v1.0.4</strong></div>
+                  <div class="uv-row"><span class="muted">Neueste Version</span><strong id="uvLatest">v1.0.4</strong></div>
+                </div>
+                <!-- Anker für das electron-updater-Panel (Ampel + Progress). Wird von update-check.js gefüllt. -->
+                <div id="updatePanelMount" class="update-panel-mount"></div>
+              </section>
+
+              <section class="card log-card">
+                <div class="card-head">
+                  <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 4h16v6H4z"/><path d="M4 14h16v6H4z"/><path d="M8 7h.01M8 17h.01"/></svg> Systemprotokoll</h3>
+                </div>
+                <ul id="logFeed" class="log-feed">
+                  <li class="lf-item"><span class="lf-dot"></span><span class="lf-msg">Client gestartet</span><span class="lf-time">—</span></li>
+                </ul>
+              </section>
+            </aside>
+          </div>
+        </section>
+
+        <!-- ================== FAHRZEUG ================== -->
+        <section class="panel" data-panel="vehicle">
+          <div class="page-header">
+            <h1>Fahrzeugstatus</h1>
+            <p>Kraftstoff, Schäden und Lenkzeit deines LKW.</p>
+          </div>
+
+          <div class="card">
+            <h3>Kraftstoff</h3>
+            <div class="stat-row">
+              <span id="vFuelText">— / — L</span>
+              <span id="vFuelPct" class="muted">—</span>
+            </div>
+            <div class="progress"><div class="progress-bar" id="vFuelBar"></div></div>
+            <div class="stat-row"><span class="muted">Ø Verbrauch</span><span id="vConsumption">—</span></div>
+          </div>
+
+          <div class="card">
+            <h3>Schadensübersicht</h3>
+            <div id="damageList"></div>
+          </div>
+
+          <div class="card">
+            <h3>Lenk- &amp; Ruhezeit</h3>
+            <div class="stat-row"><span class="muted">Gefahren heute</span><span id="vDriveTime">—</span></div>
+            <div class="stat-row"><span class="muted">Verbleibende Ruhezeit</span><span id="vRestTime">—</span></div>
+            <div class="stat-row"><span class="muted">Distanz aktueller Auftrag</span><span id="dsDistance">— km</span></div>
+            <div class="stat-row"><span class="muted">Route</span><span id="dsRoute">—</span></div>
+            <div class="stat-row"><span class="muted">Lenkzeit heute</span><span id="dsDriveTime">— Min</span></div>
+            <div class="stat-row"><span class="muted">Ruhezeit</span><span id="dsRestTime">Ruhezeit: —</span></div>
+          </div>
+        </section>
+
+        <!-- ================== SYNCHRONISATION (Auto-Polling + Sync-Status) ================== -->
+        <section class="panel" data-panel="auto">
+          <div class="page-header">
+            <h1>Synchronisation</h1>
+            <p>ETS2/ATS Telemetrie-Server-Anbindung, Retry-Queue und Full-Resync.</p>
+          </div>
+
+          <div class="card">
+            <h3>ETS2 / ATS Telemetrie-Server</h3>
+            <p class="muted small">
+              Erfordert den lokal laufenden
+              <a href="https://github.com/Funbit/ets2-telemetry-server" target="_blank" rel="noopener">ets2-telemetry-server</a>
+              auf <code>http://localhost:25555</code>. Polling startet automatisch beim App-Start.
+            </p>
+            <div class="grid">
+              <label>Telemetrie-URL<input id="f_polUrl" value="http://localhost:25555/api/ets2/telemetry" /></label>
+              <label>Poll-Intervall (ms)<input id="f_polInterval" type="number" min="500" value="2000" /></label>
+            </div>
+            <div class="row">
+              <label class="check"><input id="f_autoStart" type="checkbox" checked /> Automatisch starten</label>
+            </div>
+            <div class="row">
+              <button id="btnPollStart" class="primary">Polling starten</button>
+              <button id="btnPollStop" class="ghost" disabled>Stoppen</button>
+              <span id="pollStatus" class="status"></span>
+            </div>
+            <pre id="pollLog" class="log"></pre>
+          </div>
+
+          <div class="card">
+            <div class="card-head">
+              <h3>Sync-Status</h3>
+              <div style="display:flex;gap:8px;align-items:center">
+                <span id="dbgResyncBadge" class="pill">Resync —</span>
+              </div>
+            </div>
+            <div id="dbgResyncSummary" class="muted small" style="margin:-2px 0 8px">Full-Resync noch nicht ausgeführt.</div>
+
+            <div class="debug-grid">
+              <div><span class="muted">Retry-Queue</span><strong id="dbgQueue">0</strong></div>
+              <div><span class="muted">Letzte erfolgreiche Sync</span><strong id="dbgLastSync">—</strong></div>
+              <div><span class="muted">Polling</span><strong id="dbgPolling">gestoppt</strong></div>
+              <div><span class="muted">Aktiver Job</span><strong id="dbgActive">—</strong></div>
+            </div>
+            <div id="queueDetails" class="queue-details">
+              <div class="queue-details-head">
+                <span class="muted small">Warteschlangen-Details</span>
+                <span class="muted small">Älteste Wartedauer: <strong id="queueOldest">—</strong></span>
+              </div>
+              <div class="queue-breakdown"></div>
+              <div id="queueEmpty" class="muted small">Keine wartenden Ereignisse.</div>
+            </div>
+
+            <div id="dbgErrorWrap" class="sync-error" style="display:none;margin-top:10px">
+              <strong>Letzter Fehler:</strong> <span id="dbgErrorText"></span>
+            </div>
+            <div id="syncNowStatus" class="muted small" style="margin-top:8px"></div>
+          </div>
+        </section>
+
+        <!-- ================== AUFTRÄGE (Touren remote) ================== -->
+        <section class="panel" data-panel="jobs">
+          <div class="page-header">
+            <h1>Synchronisierte Touren</h1>
+            <p>Read-only Übersicht deiner letzten Aufträge aus der VTC-Datenbank.</p>
+          </div>
+          <div class="card">
+            <div class="filter-grid">
+              <label>Status
+                <select id="fltStatus">
+                  <option value="">Alle</option>
+                  <option value="in_progress">Unterwegs</option>
+                  <option value="submitted">Eingereicht</option>
+                  <option value="approved">Genehmigt</option>
+                  <option value="rejected">Abgelehnt</option>
+                </select>
+              </label>
+              <label>Zeitraum
+                <select id="fltPeriod">
+                  <option value="all">Alle</option>
+                  <option value="today">Heute</option>
+                  <option value="7d">Letzte 7 Tage</option>
+                  <option value="30d">Letzte 30 Tage</option>
+                  <option value="90d">Letzte 90 Tage</option>
+                </select>
+              </label>
+              <label>VTC / Spiel
+                <select id="fltGame">
+                  <option value="">Alle</option>
+                  <option value="ets2">ETS2</option>
+                  <option value="ats">ATS</option>
+                </select>
+              </label>
+              <label>Suche
+                <input id="fltSearch" placeholder="Stadt, Fracht, LKW…" />
+              </label>
+            </div>
+            <div class="row">
+              <button id="btnRefreshJobs" class="ghost">Aktualisieren</button>
+              <button id="btnExportCsv" class="ghost">CSV exportieren</button>
+              <button id="btnExportPdf" class="ghost">PDF exportieren</button>
+              <span id="jobsCount" class="muted small"></span>
+            </div>
+            <div id="jobsList" class="jobs-list"></div>
+          </div>
+        </section>
+
+        <!-- ================== PROTOKOLL / Verlauf + Entwicklerdetails ================== -->
+        <section class="panel" data-panel="history">
+          <div class="page-header">
+            <h1>Protokoll</h1>
+            <p>Letzte 200 Ereignisse (lokal gespeichert, inkl. Warteschlangen-Aktivität).</p>
+          </div>
+          <div class="card">
+            <div class="row"><button id="btnClearHistory" class="ghost">Verlauf löschen</button></div>
+            <div id="historyList" class="history"></div>
+          </div>
+
+          <!-- Job-Mapping-Debug (verschoben aus dem Dashboard, standardmäßig eingeklappt) -->
+          <details class="card debug-card" id="jobDebugCard">
+            <summary>
+              <span class="dev-badge">Entwicklerdetails</span>
+              Job-Mapping-Debug · Roh-Telemetrie ↔ normalisierte Werte
+            </summary>
+            <div class="job-debug-grid" style="margin-top:12px">
+              <div class="jd-col">
+                <div class="jd-col-title">Roh (job.*)</div>
+                <div class="jd-row"><span class="muted">sourceCity</span><code id="jdRawSrc">—</code></div>
+                <div class="jd-row"><span class="muted">destinationCity</span><code id="jdRawDst">—</code></div>
+                <div class="jd-row"><span class="muted">cargo</span><code id="jdRawCargo">—</code></div>
+                <div class="jd-row"><span class="muted">income</span><code id="jdRawIncome">—</code></div>
+                <div class="jd-row"><span class="muted">mass</span><code id="jdRawMass">—</code></div>
+                <div class="jd-row"><span class="muted">plannedDistanceKm</span><code id="jdRawDist">—</code></div>
+              </div>
+              <div class="jd-col">
+                <div class="jd-col-title">Normalisiert</div>
+                <div class="jd-row"><span class="muted">src</span><code id="jdNormSrc">—</code></div>
+                <div class="jd-row"><span class="muted">dst</span><code id="jdNormDst">—</code></div>
+                <div class="jd-row"><span class="muted">cargo</span><code id="jdNormCargo">—</code></div>
+                <div class="jd-row"><span class="muted">income</span><code id="jdNormIncome">—</code></div>
+                <div class="jd-row"><span class="muted">mass</span><code id="jdNormMass">—</code></div>
+                <div class="jd-row"><span class="muted">distanceKm</span><code id="jdNormDist">—</code></div>
+              </div>
+            </div>
+            <div class="jd-flags muted small">
+              <span>finished: <code id="jdNormFinished">—</code></span>
+              <span>cancelled: <code id="jdNormCancelled">—</code></span>
+              <span>hasJob: <code id="jdHasJob">—</code></span>
+              <span>activeJob: <code id="jdActiveJob">—</code></span>
+            </div>
+          </details>
+        </section>
+
+        <!-- ================== VTC-CHAT ================== -->
+        <section class="panel" data-panel="chat">
+          <div class="page-header">
+            <h1>VTC-Chat</h1>
+            <p>Interner Team-Chat deiner Spedition. Nachrichten werden mit deinem VTC synchronisiert.</p>
+          </div>
+          <div class="card chat-card">
+            <div id="chatLog" class="chat-log">
+              <div class="chat-empty muted small">Noch keine Nachrichten. Schreibe die erste!</div>
+            </div>
+            <form id="chatForm" class="chat-composer" autocomplete="off">
+              <input id="chatInput" type="text" maxlength="4000" placeholder="Nachricht schreiben…" />
+              <button type="submit" id="chatSend" class="primary">Senden</button>
+            </form>
+            <div id="chatStatus" class="muted small" style="margin-top:6px"></div>
+          </div>
+        </section>
+
+        <!-- ================== EINSTELLUNGEN ================== -->
+        <section class="panel" data-panel="settings">
+          <div class="page-header">
+            <h1>Einstellungen</h1>
+            <p>Verbindung zu deiner VTC konfigurieren.</p>
+          </div>
+          <div class="card">
+            <label>API-Basis-URL<input id="s_apiUrl" placeholder="https://virtual-fleet-forge.lovable.app" /></label>
+            <label>VTC-API-Schlüssel<input id="s_apiKey" type="password" placeholder="vtc_..." /></label>
+            <label>Fahrer Steam-ID<input id="s_steamId" placeholder="76561198000000000" /></label>
+            <label>oder Fahrer-Benutzer-ID<input id="s_userId" placeholder="uuid" /></label>
+            <div class="row">
+              <button id="btnSaveSettings" class="primary">Speichern</button>
+              <button id="btnTest" class="ghost">Verbindung testen</button>
+              <span id="settingsStatus" class="status"></span>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <!-- ============ UNTERE STATUSLEISTE ============ -->
+    <footer class="statusbar">
+      <div class="sb-item"><span class="sb-key">Auto-Polling:</span> <span id="sbPolling" class="sb-val on">Aktiv</span></div>
+      <div class="sb-sep"></div>
+      <div class="sb-item">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v4H4z"/><path d="M4 12h16v4H4z"/><path d="M4 20h10"/></svg>
+        <span id="queueBadge" class="pill pill-ok">Warteschlange leer</span>
+      </div>
+      <div class="sb-sep"></div>
+      <div class="sb-item"><span class="sb-key">Status:</span> <span id="sbConn" class="sb-val on">Verbunden</span></div>
+      <div class="sb-spacer"></div>
+      <div class="sb-item small muted" id="lastSyncBadge">Letzte Sync: —</div>
+      <div class="sb-item small" id="sbUpdateBadge"><span class="pill pill-ok">Client aktuell: v1.0.4</span></div>
+    </footer>
+
+    <!-- update-check.js braucht historisch einen aside.sidebar-Fallback -->
+    <aside class="sidebar sidebar-hidden" aria-hidden="true" style="display:none"></aside>
+
+    <!-- Live-Karte: Modal für Vergrößerung (Desktop-intern, kein externer Browser) -->
+    <div id="lmModal" class="lm-modal" style="display:none" aria-hidden="true">
+      <div class="lm-modal-head">
+        <h3>Live-Karte <span id="lmModalCount" class="muted small"></span></h3>
+        <button id="lmModalClose" class="lm-btn" aria-label="Schließen">✕</button>
+      </div>
+      <div class="lm-modal-body">
+        <aside class="lm-modal-list">
+          <input id="lmSearch" class="lm-search" placeholder="Fahrer suchen…" />
+          <div class="lm-filter-row">
+            <button class="lm-chip active" data-lm-filter="vtc">Meine VTC</button>
+            <button class="lm-chip" data-lm-filter="self">Nur ich</button>
+            <button class="lm-chip" data-lm-game="all">Alle</button>
+            <button class="lm-chip" data-lm-game="ETS2">ETS2</button>
+            <button class="lm-chip" data-lm-game="ATS">ATS</button>
+          </div>
+          <div id="lmModalList" class="lm-list"></div>
+        </aside>
+        <div class="lm-modal-map">
+          <div id="lmMapBig" class="lm-canvas"></div>
+        </div>
+      </div>
+    </div>
+
+    <script src="vendor/leaflet/leaflet.js"></script>
+    <script src="game-map.js"></script>
+    <script src="live-map-logic.js"></script>
+    <script src="normalize-job.js"></script>
+    <script src="renderer.js"></script>
+    <script src="chat.js" defer></script>
+    <script src="ui-adapter.js" defer></script>
+    <script src="live-map.js" defer></script>
+    <script src="update-check.js" defer></script>
+  </body>
+</html>

@@ -739,6 +739,7 @@ async function postLiveFrame(d) {
   const s = state.settings;
   if (!s.apiUrl || !s.apiKey) return;
   const t = d.truck || {}, j = d.job || {}, g = d.game || {};
+  const normalizedJob = normalizeJob(d);
   const body = {
     status: n(t.speed) > 5 ? "driving" : "idle",
     truck_model: t.model || undefined, truck_brand: t.make || undefined, truck_plate: t.licensePlate || undefined,
@@ -746,7 +747,7 @@ async function postLiveFrame(d) {
     position_x: t.placement?.x, position_y: t.placement?.y, position_z: t.placement?.z, heading: t.placement?.heading,
     fuel: n(t.fuel), fuel_capacity: n(t.fuelCapacity), fuel_level: n(t.fuel), fuel_consumption_avg: n(t.fuelAverageConsumption),
     cargo: (typeof j.cargo === "string" ? j.cargo : j.cargo?.name) || j.cargoName || undefined,
-    cargo_mass_kg: n(j.mass ?? j.cargo?.mass),
+    cargo_mass_kg: n(normalizedJob.mass),
     source_city: (j.sourceCity || j.source?.city?.name || j.source?.city) || undefined,
     dest_city: (j.destinationCity || j.destination?.city?.name || j.destination?.city) || undefined,
     job_distance_km: n(j.plannedDistanceKm ?? j.remainingDistanceKm),
@@ -805,6 +806,7 @@ async function syncJobLifecycle(d) {
     log(`Neuer Auftrag erkannt: ${src} → ${dst}${cargo ? ` (${cargo})` : ""}`);
     const startedPayload = {
       source_city: src, dest_city: dst, cargo: cargo || "Unbekannt",
+      ...(n(nj.mass) > 0 ? { cargo_mass_kg: n(nj.mass) } : {}),
       // distance_km ist die tatsächlich gefahrene Strecke, nicht die Planstrecke.
       distance_km: 0,
       ...(currentOdometer != null && Number.isFinite(currentOdometer)
@@ -821,6 +823,7 @@ async function syncJobLifecycle(d) {
     const baseAj = {
       source: src, dest: dst, cargo,
       income: n(nj.income),
+      cargoMassKg: n(nj.mass) > 0 ? n(nj.mass) : null,
       plannedDistanceKm: n(nj.distanceKm),
       drivenKm: 0,
       startOdometer: currentOdometer != null && Number.isFinite(currentOdometer)
@@ -872,6 +875,9 @@ async function syncJobLifecycle(d) {
         source_city: state.activeJob.source || src || "?",
         dest_city: state.activeJob.dest || dst || "?",
         cargo: state.activeJob.cargo || cargo || "Unbekannt",
+        ...(n(state.activeJob.cargoMassKg) > 0
+          ? { cargo_mass_kg: n(state.activeJob.cargoMassKg) }
+          : n(nj.mass) > 0 ? { cargo_mass_kg: n(nj.mass) } : {}),
         distance_km: Math.round(n(state.activeJob.drivenKm) * 10) / 10,
         ...(currentOdometer != null && Number.isFinite(currentOdometer)
           ? { odometer_km: currentOdometer }
@@ -917,6 +923,9 @@ async function syncJobLifecycle(d) {
       source_city: aj.source || src || "?",
       dest_city: aj.dest || dst || "?",
       cargo: aj.cargo || cargo || "Unbekannt",
+      ...(n(aj.cargoMassKg) > 0
+        ? { cargo_mass_kg: n(aj.cargoMassKg) }
+        : n(nj.mass) > 0 ? { cargo_mass_kg: n(nj.mass) } : {}),
       distance_km: finalKm,
       ...(currentOdometer != null && Number.isFinite(currentOdometer)
         ? { odometer_km: currentOdometer }

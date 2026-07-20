@@ -152,6 +152,7 @@ export type Database = {
       jobs: {
         Row: {
           cargo: string
+          cargo_mass_kg: number | null
           created_at: string
           damage_pct: number
           dest_city: string
@@ -179,6 +180,7 @@ export type Database = {
         }
         Insert: {
           cargo: string
+          cargo_mass_kg?: number | null
           created_at?: string
           damage_pct?: number
           dest_city: string
@@ -206,6 +208,7 @@ export type Database = {
         }
         Update: {
           cargo?: string
+          cargo_mass_kg?: number | null
           created_at?: string
           damage_pct?: number
           dest_city?: string

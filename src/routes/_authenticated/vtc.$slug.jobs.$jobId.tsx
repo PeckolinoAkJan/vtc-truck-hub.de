@@ -272,8 +272,8 @@ function OverviewTab({
           <Field
             label="Frachtgewicht"
             value={
-              t?.cargo_mass_kg
-                ? `${new Intl.NumberFormat("de-DE").format(Number(t.cargo_mass_kg))} kg`
+              job.cargo_mass_kg || t?.cargo_mass_kg
+                ? `${new Intl.NumberFormat("de-DE").format(Number(job.cargo_mass_kg ?? t?.cargo_mass_kg))} kg`
                 : "—"
             }
           />

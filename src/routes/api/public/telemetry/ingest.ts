@@ -13,6 +13,7 @@ const eventSchema = z.object({
       source_city: z.string().max(80).optional(),
       dest_city: z.string().max(80).optional(),
       cargo: z.string().max(80).optional(),
+      cargo_mass_kg: z.number().min(0).max(100000).optional(),
       distance_km: z.number().min(0).max(100000).optional(),
       odometer_km: z.number().min(0).max(10_000_000).optional(),
       revenue: z.number().min(0).max(10_000_000).optional(),
@@ -233,6 +234,7 @@ export const Route = createFileRoute("/api/public/telemetry/ingest")({
               fuel_cost?: number;
               damage_pct?: number;
               truck?: string;
+              cargo_mass_kg?: number;
               odometer_start_km?: number;
               odometer_end_km?: number;
             } = {};
@@ -279,6 +281,9 @@ export const Route = createFileRoute("/api/public/telemetry/ingest")({
             if (typeof p.fuel_cost === "number") updatePatch.fuel_cost = p.fuel_cost;
             if (typeof p.damage_pct === "number") updatePatch.damage_pct = p.damage_pct;
             if (p.truck) updatePatch.truck = p.truck;
+            if (typeof p.cargo_mass_kg === "number" && p.cargo_mass_kg > 0) {
+              updatePatch.cargo_mass_kg = p.cargo_mass_kg;
+            }
             if (Object.keys(updatePatch).length > 0) {
               await supabaseAdmin.from("jobs").update(updatePatch).eq("id", jobId);
             }
@@ -309,6 +314,7 @@ export const Route = createFileRoute("/api/public/telemetry/ingest")({
                 source_city: srcCity,
                 dest_city: dstCity,
                 cargo: cargoName,
+                cargo_mass_kg: p.cargo_mass_kg ?? null,
                 distance_km: p.distance_km ?? 0,
                 revenue: p.revenue ?? 0,
                 fuel_cost: p.fuel_cost ?? 0,
@@ -387,6 +393,7 @@ export const Route = createFileRoute("/api/public/telemetry/ingest")({
             damage_pct?: number;
             game?: "ets2" | "ats" | "other";
             truck?: string;
+            cargo_mass_kg?: number;
             odometer_end_km?: number;
           } = {
             status: "submitted",
@@ -400,6 +407,9 @@ export const Route = createFileRoute("/api/public/telemetry/ingest")({
           if (typeof p.damage_pct === "number") patch.damage_pct = p.damage_pct;
           if (p.game) patch.game = p.game;
           if (p.truck) patch.truck = p.truck;
+          if (typeof p.cargo_mass_kg === "number" && p.cargo_mass_kg > 0) {
+            patch.cargo_mass_kg = p.cargo_mass_kg;
+          }
           if (typeof p.odometer_km === "number" && p.odometer_km > 0) {
             patch.odometer_end_km = p.odometer_km;
           }
@@ -507,6 +517,7 @@ export const Route = createFileRoute("/api/public/telemetry/ingest")({
                   source_city: p.source_city ?? "?",
                   dest_city: p.dest_city ?? "?",
                   cargo: p.cargo ?? "?",
+                  cargo_mass_kg: p.cargo_mass_kg ?? null,
                   distance_km: p.distance_km ?? 0,
                   revenue: p.revenue ?? 0,
                   fuel_cost: p.fuel_cost ?? 0,

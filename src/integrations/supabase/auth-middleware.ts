@@ -54,8 +54,14 @@ export const requireSupabaseAuth = createMiddleware({ type: 'function' }).server
 
     const authHeader = request.headers.get('authorization');
     const proxySafeToken = request.headers.get('x-supabase-auth');
+    const cookieToken = request.headers
+      .get('cookie')
+      ?.split(';')
+      .map((cookie) => cookie.trim())
+      .find((cookie) => cookie.startsWith('vtc_supabase_auth='))
+      ?.slice('vtc_supabase_auth='.length);
 
-    if (!authHeader && !proxySafeToken) {
+    if (!authHeader && !proxySafeToken && !cookieToken) {
       throw new Error('Unauthorized: No authorization header provided');
     }
 
@@ -63,7 +69,10 @@ export const requireSupabaseAuth = createMiddleware({ type: 'function' }).server
       throw new Error('Unauthorized: Only Bearer tokens are supported');
     }
 
-    const token = proxySafeToken || authHeader?.replace('Bearer ', '') || '';
+    const token =
+      proxySafeToken ||
+      authHeader?.replace('Bearer ', '') ||
+      (cookieToken ? decodeURIComponent(cookieToken) : '');
     if (!token) {
       throw new Error('Unauthorized: No token provided');
     }

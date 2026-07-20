@@ -8,6 +8,16 @@ export const attachSupabaseAuth = createMiddleware({ type: 'function' }).client(
   async ({ next }) => {
     const { data } = await supabase.auth.getSession()
     const token = data.session?.access_token
+
+    // Plesk/Passenger may remove custom authentication headers before the
+    // request reaches the Node process. Keep a same-site cookie fallback in
+    // sync with the browser session so server functions can still authenticate.
+    if (token) {
+      document.cookie = `vtc_supabase_auth=${encodeURIComponent(token)}; Path=/; Max-Age=3600; SameSite=Lax; Secure`
+    } else {
+      document.cookie = 'vtc_supabase_auth=; Path=/; Max-Age=0; SameSite=Lax; Secure'
+    }
+
     return next({
       headers: token
         ? {

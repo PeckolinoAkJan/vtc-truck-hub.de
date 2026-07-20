@@ -24,7 +24,7 @@
 
   function apiBase() {
     const s = getSettings();
-    return (s.apiUrl || "https://virtual-fleet-forge.lovable.app").replace(/\/+$/, "");
+    return (s.apiUrl || "https://vtc-truck-hub.de").replace(/\/+$/, "");
   }
 
   function authHeaders() {

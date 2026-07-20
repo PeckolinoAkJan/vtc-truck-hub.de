@@ -1,6 +1,10 @@
 /* MPL Logistik Desktop Client — Renderer */
 
 const $ = (id) => document.getElementById(id);
+const DEFAULT_API_URL = "https://vtc-truck-hub.de";
+const LEGACY_API_URLS = new Set([
+  "https://virtual-fleet-forge.lovable.app",
+]);
 
 const state = {
   settings: loadSettings(),
@@ -30,17 +34,21 @@ const state = {
 
 function loadSettings() {
   try {
-    return (
-      JSON.parse(localStorage.getItem("mpl.settings")) || {
-        apiUrl: "https://virtual-fleet-forge.lovable.app",
-        apiKey: "",
-        steamId: "",
-        userId: "",
-        autoStart: true,
-      }
-    );
+    const saved = JSON.parse(localStorage.getItem("mpl.settings")) || {};
+    const normalizedUrl = String(saved.apiUrl || "").replace(/\/+$/, "");
+    const settings = {
+      apiUrl: !normalizedUrl || LEGACY_API_URLS.has(normalizedUrl) ? DEFAULT_API_URL : normalizedUrl,
+      apiKey: saved.apiKey || "",
+      steamId: saved.steamId || "",
+      userId: saved.userId || "",
+      autoStart: saved.autoStart !== false,
+    };
+    if (settings.apiUrl !== normalizedUrl) {
+      localStorage.setItem("mpl.settings", JSON.stringify(settings));
+    }
+    return settings;
   } catch {
-    return { apiUrl: "https://virtual-fleet-forge.lovable.app", apiKey: "", steamId: "", userId: "", autoStart: true };
+    return { apiUrl: DEFAULT_API_URL, apiKey: "", steamId: "", userId: "", autoStart: true };
   }
 }
 

@@ -34,7 +34,7 @@ The output folder `release/VTC Fleet Forge Client-win32-x64/` contains
 
 ## Configuration (in the app → Settings tab)
 
-- **API base URL** — e.g. `https://virtual-fleet-forge.lovable.app`
+- **API base URL** — `https://vtc-truck-hub.de`
 - **VTC API key** — issued in the VTC settings page
 - **Driver Steam ID** *or* **Driver user ID**
 

@@ -8,7 +8,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/PeckolinoAkJan/virtual-fleet-forge.git"
+    "url": "https://github.com/PeckolinoAkJan/vtc-truck-hub.de.git"
   },
   "scripts": {
     "start": "electron .",
@@ -28,7 +28,7 @@
       {
         "provider": "github",
         "owner": "PeckolinoAkJan",
-        "repo": "virtual-fleet-forge",
+        "repo": "vtc-truck-hub.de",
         "channel": "latest"
       }
     ],

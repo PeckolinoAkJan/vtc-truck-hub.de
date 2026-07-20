@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import {
   type GameKey,
+  FALLBACK_GAME_CITIES,
   gameCoordinatesToMapCoordinates,
   getAttribution,
   getMapProviderConfig,
@@ -197,7 +198,9 @@ export function LiveMap({
       const leaflet = await import("leaflet");
       const map = mapRef.current;
       if (baseLayerRef.current) { map.removeLayer(baseLayerRef.current); baseLayerRef.current = null; }
-      const gameCities = cities.filter((city) => normalizeGame(city.game) === activeGame);
+      const mergedCities = new Map(FALLBACK_GAME_CITIES.map((city) => [`${city.game}|${city.name}`, city]));
+      for (const city of cities) mergedCities.set(`${city.game}|${city.name}`, city);
+      const gameCities = Array.from(mergedCities.values()).filter((city) => normalizeGame(city.game) === activeGame);
       if (!gameCities.length) return;
       const layer = leaflet.layerGroup();
       const connected = new Set<string>();

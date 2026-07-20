@@ -18,6 +18,23 @@
 
 export type GameKey = "ETS2" | "ATS";
 
+export const FALLBACK_GAME_CITIES = [
+  ["ETS2","London",-2570,-9370],["ETS2","Paris",-1440,-7770],["ETS2","Amsterdam",330,-9560],
+  ["ETS2","Brüssel",-260,-8400],["ETS2","Frankfurt",2540,-8180],["ETS2","Hamburg",3960,-10770],
+  ["ETS2","Berlin",5460,-9270],["ETS2","München",5030,-6770],["ETS2","Zürich",2600,-5900],
+  ["ETS2","Wien",6520,-6960],["ETS2","Prag",6410,-8460],["ETS2","Warschau",9330,-9780],
+  ["ETS2","Budapest",8010,-6500],["ETS2","Mailand",2610,-4470],["ETS2","Rom",4790,-1990],
+  ["ETS2","Barcelona",-2410,-4020],["ETS2","Madrid",-4650,-3660],["ETS2","Lissabon",-7360,-3210],
+  ["ETS2","Bukarest",11290,-4880],["ETS2","Brașov",11220,-4210],["ETS2","Sofia",11430,-3040],
+  ["ETS2","Istanbul",13720,-3140],["ETS2","Kopenhagen",3990,-12140],["ETS2","Stockholm",6250,-14830],
+  ["ETS2","Oslo",3020,-14570],["ATS","Seattle",-108430,-6800],["ATS","Portland",-110480,-1470],
+  ["ATS","San Francisco",-108690,10770],["ATS","Los Angeles",-104650,17070],["ATS","San Diego",-101400,20200],
+  ["ATS","Las Vegas",-96500,17370],["ATS","Phoenix",-89330,20460],["ATS","Salt Lake City",-84070,10460],
+  ["ATS","Denver",-72240,13520],["ATS","Albuquerque",-77930,20400],["ATS","El Paso",-79900,23400],
+  ["ATS","Dallas",-56200,23400],["ATS","Houston",-52400,25920],["ATS","Oklahoma City",-55890,19200],
+  ["ATS","Kansas City",-52000,15450],
+].map(([game, name, x, z]) => ({ game: String(game), name: String(name), country: null, x: Number(x), z: Number(z) }));
+
 export interface GameMapConfig {
   /** Ursprung der Spielwelt in Spiel-Einheiten (x, z) */
   originX: number;

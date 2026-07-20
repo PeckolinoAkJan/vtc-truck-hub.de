@@ -14,7 +14,11 @@ function AppHome() {
   const fetchList = useServerFn(listMyVtcs);
   const navigate = useNavigate();
   const qc = useQueryClient();
-  const { data, isLoading } = useQuery({ queryKey: ["my-vtcs"], queryFn: () => fetchList() });
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["my-vtcs"],
+    queryFn: () => fetchList(),
+    retry: 1,
+  });
 
   useEffect(() => {
     if (data && data.length === 1) {
@@ -33,6 +37,27 @@ function AppHome() {
   }
 
   if (isLoading) return <CenteredLoader />;
+
+  if (error) {
+    return (
+      <div className="mx-auto max-w-3xl px-4 py-16">
+        <div className="panel border-destructive/40 p-6">
+          <h1 className="text-lg font-semibold">Deine VTCs konnten nicht geladen werden</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Bitte lade die Seite neu. Falls der Fehler bestehen bleibt, melde dich einmal ab und
+            wieder an.
+          </p>
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="mt-4 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
+          >
+            Seite neu laden
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-16">

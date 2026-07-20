@@ -81,6 +81,22 @@ export const requireSupabaseAuth = createMiddleware({ type: 'function' }).server
       throw new Error('Unauthorized: Invalid token');
     }
 
+    let tokenIssuer = '';
+    try {
+      const payload = JSON.parse(
+        Buffer.from(token.split('.')[1], 'base64url').toString('utf8'),
+      ) as { iss?: string };
+      tokenIssuer = payload.iss ?? '';
+    } catch {
+      throw new Error('Unauthorized: Invalid token payload');
+    }
+
+    if (tokenIssuer && !tokenIssuer.startsWith(SUPABASE_URL)) {
+      throw new Error(
+        `Unauthorized: Supabase project mismatch (${new URL(tokenIssuer).hostname} instead of ${new URL(SUPABASE_URL).hostname})`,
+      );
+    }
+
     const supabase = createClient<Database>(
       SUPABASE_URL!,
       SUPABASE_PUBLISHABLE_KEY!,

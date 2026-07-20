@@ -6,7 +6,7 @@ import { Truck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 const searchSchema = z.object({
-  mode: z.enum(["signin", "signup"]).optional(),
+  mode: z.enum(["signin", "signup", "forgot", "reset"]).optional(),
   redirect: z.string().optional(),
   role: z.enum(["founder", "driver"]).optional(),
 });
@@ -26,7 +26,9 @@ function AuthPage() {
   const { mode: initialMode, redirect: redirectTo } = Route.useSearch();
   const navigate = useNavigate();
   const googleAuthEnabled = import.meta.env.VITE_GOOGLE_AUTH_ENABLED === "true";
-  const [mode, setMode] = useState<"signin" | "signup">(initialMode ?? "signin");
+  const [mode, setMode] = useState<"signin" | "signup" | "forgot" | "reset">(
+    initialMode ?? "signin",
+  );
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
@@ -40,15 +42,28 @@ function AuthPage() {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
-      if (data.session) navigate({ to: nextTarget, replace: true });
+      if (data.session && mode !== "reset") {
+        navigate({ to: nextTarget, replace: true });
+      }
     });
-  }, [navigate, nextTarget]);
+  }, [mode, navigate, nextTarget]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     try {
-      if (mode === "signup") {
+      if (mode === "forgot") {
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: `${window.location.origin}/auth?mode=reset`,
+        });
+        if (error) throw error;
+        toast.success("Wir haben dir einen Link zum Zurücksetzen geschickt.");
+      } else if (mode === "reset") {
+        const { error } = await supabase.auth.updateUser({ password });
+        if (error) throw error;
+        toast.success("Dein neues Passwort wurde gespeichert.");
+        navigate({ to: nextTarget, replace: true });
+      } else if (mode === "signup") {
         const { error } = await supabase.auth.signUp({
           email,
           password,
@@ -97,12 +112,22 @@ function AuthPage() {
         </Link>
         <div className="panel p-6">
           <h1 className="text-xl font-semibold">
-            {mode === "signup" ? "Konto erstellen" : "Willkommen zurück"}
+            {mode === "signup"
+              ? "Konto erstellen"
+              : mode === "forgot"
+                ? "Passwort zurücksetzen"
+                : mode === "reset"
+                  ? "Neues Passwort"
+                  : "Willkommen zurück"}
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
             {mode === "signup"
               ? "Erstelle deine VTC oder tritt einer bestehenden bei."
-              : "Melde dich mit deinem Konto an."}
+              : mode === "forgot"
+                ? "Wir senden dir einen sicheren Link per E-Mail."
+                : mode === "reset"
+                  ? "Lege ein neues Passwort mit mindestens 8 Zeichen fest."
+                  : "Melde dich mit deinem Konto an."}
           </p>
 
           {googleAuthEnabled && (
@@ -132,32 +157,67 @@ function AuthPage() {
                 placeholder="z. B. Max Mustermann"
               />
             )}
-            <Field label="E-Mail" type="email" value={email} onChange={setEmail} required />
-            <Field
-              label="Passwort"
-              type="password"
-              value={password}
-              onChange={setPassword}
-              required
-              minLength={8}
-            />
+            {mode !== "reset" && (
+              <Field label="E-Mail" type="email" value={email} onChange={setEmail} required />
+            )}
+            {mode !== "forgot" && (
+              <Field
+                label={mode === "reset" ? "Neues Passwort" : "Passwort"}
+                type="password"
+                value={password}
+                onChange={setPassword}
+                required
+                minLength={8}
+              />
+            )}
             <button
               type="submit"
               disabled={loading}
               className="mt-2 w-full rounded-md bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
             >
-              {loading ? "…" : mode === "signup" ? "Registrieren" : "Anmelden"}
+              {loading
+                ? "…"
+                : mode === "signup"
+                  ? "Registrieren"
+                  : mode === "forgot"
+                    ? "Link anfordern"
+                    : mode === "reset"
+                      ? "Passwort speichern"
+                      : "Anmelden"}
             </button>
           </form>
 
-          <div className="mt-5 text-center text-sm text-muted-foreground">
-            {mode === "signup" ? "Schon Konto?" : "Neu hier?"}{" "}
+          {mode === "signin" && (
             <button
-              className="text-primary hover:underline"
-              onClick={() => setMode(mode === "signup" ? "signin" : "signup")}
+              type="button"
+              className="mt-4 w-full text-center text-sm text-primary hover:underline"
+              onClick={() => setMode("forgot")}
             >
-              {mode === "signup" ? "Anmelden" : "Konto erstellen"}
+              Passwort vergessen?
             </button>
+          )}
+
+          <div className="mt-5 text-center text-sm text-muted-foreground">
+            {mode === "forgot" || mode === "reset" ? (
+              <button
+                type="button"
+                className="text-primary hover:underline"
+                onClick={() => setMode("signin")}
+              >
+                Zurück zur Anmeldung
+              </button>
+            ) : (
+              <>
+                {mode === "signup" ? "Schon Konto?" : "Neu hier?"}{" "}
+                <button
+                  type="button"
+                  className="text-primary hover:underline"
+                  onClick={() => setMode(mode === "signup" ? "signin" : "signup")}
+                >
+                  {mode === "signup" ? "Anmelden" : "Konto erstellen"}
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>

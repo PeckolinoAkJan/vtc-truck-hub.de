@@ -47,6 +47,9 @@ function AppHome() {
             Bitte lade die Seite neu. Falls der Fehler bestehen bleibt, melde dich einmal ab und
             wieder an.
           </p>
+          <p className="mt-3 rounded-md bg-surface-2 p-3 font-mono text-xs text-muted-foreground">
+            {error instanceof Error ? error.message : String(error)}
+          </p>
           <button
             type="button"
             onClick={() => window.location.reload()}

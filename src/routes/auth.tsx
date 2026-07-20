@@ -25,6 +25,7 @@ export const Route = createFileRoute("/auth")({
 function AuthPage() {
   const { mode: initialMode, redirect: redirectTo } = Route.useSearch();
   const navigate = useNavigate();
+  const googleAuthEnabled = import.meta.env.VITE_GOOGLE_AUTH_ENABLED === "true";
   const [mode, setMode] = useState<"signin" | "signup">(initialMode ?? "signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -104,18 +105,23 @@ function AuthPage() {
               : "Melde dich mit deinem Konto an."}
           </p>
 
-          <button
-            type="button"
-            onClick={handleGoogle}
-            disabled={loading}
-            className="mt-5 flex w-full items-center justify-center gap-2 rounded-md border border-border bg-surface-2 px-4 py-2.5 text-sm font-medium hover:bg-accent disabled:opacity-60"
-          >
-            <GoogleIcon /> Mit Google fortfahren
-          </button>
+          {googleAuthEnabled && (
+            <>
+              <button
+                type="button"
+                onClick={handleGoogle}
+                disabled={loading}
+                className="mt-5 flex w-full items-center justify-center gap-2 rounded-md border border-border bg-surface-2 px-4 py-2.5 text-sm font-medium hover:bg-accent disabled:opacity-60"
+              >
+                <GoogleIcon /> Mit Google fortfahren
+              </button>
 
-          <div className="my-5 flex items-center gap-3 text-xs text-muted-foreground">
-            <div className="h-px flex-1 bg-border" /> ODER <div className="h-px flex-1 bg-border" />
-          </div>
+              <div className="my-5 flex items-center gap-3 text-xs text-muted-foreground">
+                <div className="h-px flex-1 bg-border" /> ODER{" "}
+                <div className="h-px flex-1 bg-border" />
+              </div>
+            </>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-3">
             {mode === "signup" && (
